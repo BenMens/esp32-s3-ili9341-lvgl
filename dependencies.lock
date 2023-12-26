@@ -1,0 +1,15 @@
+dependencies:
+  dernasherbrezon/sx127x:
+    component_hash: 6dfc40e1c3162eadc6bbdd7dd2163354a215bf1637cc08035795c6592f10c396
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 3.1.1
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 5.1.2
+manifest_hash: 188455deb8f3af161775b4f2cd5653d4f040cbaaf16e9d4704f4fb22511d5d29
+target: esp32s3
+version: 1.0.0

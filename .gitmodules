@@ -1,0 +1,12 @@
+[submodule "components/neopixel"]
+	path = components/neopixel
+	url = https://github.com/BenMens/esp32-neopixel.git
+[submodule "components/rotary-encoder"]
+	path = components/rotary-encoder
+	url = https://github.com/BenMens/esp32-rotary-encoder.git
+[submodule "components/display-lvgl"]
+	path = components/display-lvgl
+	url = https://github.com/BenMens/esp32-display-lvgl.git
+[submodule "components/display"]
+	path = components/display
+	url = https://github.com/BenMens/esp32-display.git

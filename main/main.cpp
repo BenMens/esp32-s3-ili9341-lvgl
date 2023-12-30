@@ -4,13 +4,17 @@
 
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
+#include "esp_adc/adc_oneshot.h"
 #include "esp_err.h"
 #include "esp_event.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
+#include "esp_lcd_panel_vendor.h"
 #include "esp_log.h"
 #include "neopixel.hpp"
-#include "esp_lcd_panel_vendor.h"
+#include "esp-display.hpp"
 
 #define TAG "main"
 
@@ -36,11 +40,12 @@ static sx127x *sx127xDevice = NULL;
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define WRITE_BIT I2C_MASTER_WRITE  /*!< I2C master write */
-#define READ_BIT I2C_MASTER_READ    /*!< I2C master read */
 #define ACK_CHECK_EN 0x1            /*!< I2C master will check ack from slave*/
 #define ACK_CHECK_DIS 0x0 /*!< I2C master will not check ack from slave */
 #define ACK_VAL 0x0       /*!< I2C ack value */
 #define NACK_VAL 0x1      /*!< I2C nack value */
+
+static adc_oneshot_unit_handle_t oneshot_handle;
 
 void setupLora()
 {
@@ -156,6 +161,48 @@ static int scanI2CBus()
     return 0;
 }
 
+void setupJoystick()
+{
+    adc_oneshot_unit_init_cfg_t init_config2 = {
+        .unit_id = ADC_UNIT_2,
+        .clk_src = ADC_RTC_CLK_SRC_DEFAULT,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config2, &oneshot_handle));
+
+    adc_oneshot_chan_cfg_t acd_config = {
+        .atten = ADC_ATTEN_DB_11,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_config_channel(oneshot_handle, ADC_CHANNEL_4, &acd_config));
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_config_channel(oneshot_handle, ADC_CHANNEL_5, &acd_config));
+
+    adc_cali_handle_t calibration_handle = NULL;
+    esp_err_t ret = ESP_FAIL;
+
+    ESP_LOGI(TAG, "calibration scheme version is %s", "Curve Fitting");
+    adc_cali_curve_fitting_config_t cali_config = {
+        .unit_id = ADC_UNIT_2,
+        .chan = ADC_CHANNEL_4,
+        .atten = ADC_ATTEN_DB_11,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    ret =
+        adc_cali_create_scheme_curve_fitting(&cali_config, &calibration_handle);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Calibration Success");
+
+    } else if (ret == ESP_ERR_NOT_SUPPORTED) {
+        ESP_LOGW(TAG, "eFuse not burnt, skip software calibration");
+    } else {
+        ESP_LOGE(TAG, "Invalid arg or no memory");
+    }
+}
+
 extern "C" void app_main(void)
 {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -171,6 +218,7 @@ extern "C" void app_main(void)
                                .blue = 0x08,
                                .white = 0x00,
                            });
+    neoPixels->write();
 
     ESP_LOGI(TAG, "setup SPI3_HOST");
     spi_bus_config_t buscfg = {
@@ -218,22 +266,32 @@ extern "C" void app_main(void)
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
     };
+
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(
         (esp_lcd_i2c_bus_handle_t)I2C_NUM_0, &io_config, &io_handle));
 
-    esp_lcd_panel_handle_t panel_handle = NULL;
-    esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = -1,
-        .bits_per_pixel = 1,
-    };
+    esp_lcd_panel_handle_t p = display::createSSD1306Panel(io_handle);
 
-    esp_lcd_panel_io_tx_param(io_handle, 0xaa, NULL, 0);
-    // ESP_ERROR_CHECK(
-    //     esp_lcd_new_panel_ssd1306(io_handle, &panel_config, &panel_handle));
+    // setupJoystick();
 
+    // static int adc_raw[2];
+    // static int voltage[2];
     while (true) {
-        neoPixels->write();
+        // ESP_ERROR_CHECK(
+        //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_4, &adc_raw[0]));
+        // ESP_ERROR_CHECK(
+        //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_5, &adc_raw[1]));
+        // ESP_LOGI(TAG, "x=%d y=%d", adc_raw[0], adc_raw[1]);
+        // if (calibration_handle) {
+        //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
+        //     //                                         adc_raw[0],
+        //     //                                         &voltage[0]));
+        //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
+        //     //                                         adc_raw[1],
+        //     //                                         &voltage[1]));
+        //     ESP_LOGI(TAG, "x=%d mV y=%d mV", voltage[0], voltage[1]);
+        // }
 
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }

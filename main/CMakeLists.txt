@@ -9,6 +9,11 @@ idf_component_register(
         esp_hw_support
         esp_event
         esp_lcd
+        esp_adc
         neopixel
         sx127x
+        rotary-encoder
+        display-lvgl
+        display
+
 )

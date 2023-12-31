@@ -14,8 +14,8 @@ idf_component_register(
         neopixel
         sx127x
         rotary-encoder
-        display-lvgl
         display
+        display-lvgl
         lvgl
 
 )

@@ -29,7 +29,6 @@ static lv_obj_t *cocoState;
 
 extern uint8_t test_img[];
 
-
 void setIpAddressText(char *text)
 {
     lcd::lvglLock(-1);
@@ -90,29 +89,31 @@ static void custom_apply_cb(struct _lv_theme_t *theme, lv_obj_t *obj)
 
 esp_err_t guiInit()
 {
-    panel_io_handle =
-        display::createI2CPanelIO((esp_lcd_i2c_bus_handle_t)I2C_NUM_0, 0x3c);
+    lcd::startLvgl();
 
-    ssd1306_panel_handle = display::createSSD1306Panel(panel_io_handle);
+    panel_io_handle = display::createSdd1306I2CPanelIO(
+        (esp_lcd_i2c_bus_handle_t)I2C_NUM_0, 0x3c);
 
+    ssd1306_panel_handle = display::createSdd1306Panel(panel_io_handle);
 
     esp_lcd_panel_mirror(ssd1306_panel_handle, true, true);
 
-    lcd::startLvgl(panel_io_handle, ssd1306_panel_handle, LCD_H_RES, LCD_V_RES,
-                   24);
+    lv_disp_t *disp =
+        lcd::registerDisplay(panel_io_handle, ssd1306_panel_handle,
+                             lcd::SSD1306, LCD_H_RES, LCD_V_RES, 24);
 
     // encoder = new RotaryEncoder(GPIO_NUM_32, GPIO_NUM_33, GPIO_NUM_27);
 
     // lcd::createLvglRotaryInputDev(*encoder);
 
-    lv_theme_t *th = lv_theme_mono_init(NULL, false, &lv_font_montserrat_14);
+    lv_theme_t *th = lv_theme_mono_init(disp, false, &lv_font_montserrat_12);
 
     static lv_theme_t th_new;
     lv_theme_set_parent(&th_new, th);
 
     lv_theme_set_apply_cb(&th_new, custom_apply_cb);
 
-    lv_disp_set_theme(NULL, &th_new);
+    lv_disp_set_theme(disp, &th_new);
     th_new.font_large = &lv_font_montserrat_20;
 
     g_group = lv_group_create();

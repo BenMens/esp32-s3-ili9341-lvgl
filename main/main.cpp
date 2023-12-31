@@ -4,6 +4,7 @@
 
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
+#include "esp-display.hpp"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_oneshot.h"
@@ -13,8 +14,8 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_log.h"
+#include "gui.hpp"
 #include "neopixel.hpp"
-#include "esp-display.hpp"
 
 #define TAG "main"
 
@@ -44,6 +45,7 @@ static sx127x *sx127xDevice = NULL;
 #define ACK_CHECK_DIS 0x0 /*!< I2C master will not check ack from slave */
 #define ACK_VAL 0x0       /*!< I2C ack value */
 #define NACK_VAL 0x1      /*!< I2C nack value */
+
 
 static adc_oneshot_unit_handle_t oneshot_handle;
 
@@ -256,21 +258,9 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &i2c_conf));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
 
-    scanI2CBus();
+    // scanI2CBus();
 
-    esp_lcd_panel_io_handle_t io_handle = NULL;
-    esp_lcd_panel_io_i2c_config_t io_config = {
-        .dev_addr = 0x3c,
-        .control_phase_bytes = 1,
-        .dc_bit_offset = 6,
-        .lcd_cmd_bits = 8,
-        .lcd_param_bits = 8,
-    };
-
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(
-        (esp_lcd_i2c_bus_handle_t)I2C_NUM_0, &io_config, &io_handle));
-
-    esp_lcd_panel_handle_t p = display::createSSD1306Panel(io_handle);
+    guiInit();
 
     // setupJoystick();
 

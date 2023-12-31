@@ -1,5 +1,6 @@
 set(srcs
     "main.cpp"
+    "gui.cpp"
 )
 
 idf_component_register(
@@ -15,5 +16,6 @@ idf_component_register(
         rotary-encoder
         display-lvgl
         display
+        lvgl
 
 )

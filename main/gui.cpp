@@ -11,7 +11,13 @@
 #include "rotary_encoder.hpp"
 #include "sdkconfig.h"
 
-#define TAG "main"
+#define TAG "gui"
+
+#if CONFIG_PRJ_ST9978_SPI3_HOST == 1
+#define ST9978_SPI SPI3_HOST
+#else if CONFIG_PRJ_ST9978_SPI2_HOST == 1
+#define ST9978_SPI SPI2_HOST
+#endif
 
 ESP_EVENT_DEFINE_BASE(GUI_EVENTS);
 
@@ -22,7 +28,7 @@ static esp_lcd_panel_io_handle_t st7798_panel_io_handle;
 static esp_lcd_panel_handle_t st7798_panel_handle;
 
 static lv_group_t *g_group;
-static lv_obj_t *screen1, *screen2;
+static lv_obj_t *screen1, *screen2, *screen3;
 static lv_obj_t *labelIpAddress;
 static lv_obj_t *cocoProtocol;
 static lv_obj_t *cocoAdres;
@@ -97,6 +103,25 @@ lv_obj_t *createScreen2()
     return scr;
 }
 
+lv_obj_t *createScreen3()
+{
+    lv_obj_t *label;
+
+    lcd::lvglLock(-1);
+
+    lv_obj_t *scr = lv_obj_create(NULL);
+
+    label = lv_label_create(scr);
+    lv_label_set_text(label, "Screen 3");
+    lv_obj_set_pos(label, 0, 0);
+    lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
+
+    lcd::lvglUnlock();
+
+    return scr;
+}
+
 static void custom_apply_cb(struct _lv_theme_t *theme, lv_obj_t *obj)
 {
     static bool initialized = false;
@@ -137,9 +162,8 @@ esp_err_t guiInit()
     lv_disp_set_theme(disp1, &th_new1);
     th_new1.font_large = &lv_font_montserrat_20;
 
-
     st7798_panel_io_handle = display::createSt7789SpiPanelIO(
-        SPI2_HOST, (gpio_num_t)CONFIG_PRJ_PIN_ST7789_CS,
+        ST9978_SPI, (gpio_num_t)CONFIG_PRJ_PIN_ST7789_CS,
         (gpio_num_t)CONFIG_PRJ_PIN_ST7789_DC, 8, 8, 20 * 1000 * 1000);
 
     st7798_panel_handle = display::createSt7789Panel(
@@ -164,7 +188,6 @@ esp_err_t guiInit()
     th_new2.font_large = &lv_font_montserrat_20;
 
     g_group = lv_group_create();
-    lv_group_set_default(g_group);
 
     lv_group_set_wrap(g_group, false);
     lv_group_set_focus_cb(g_group, [](lv_group_t *g) {
@@ -177,20 +200,25 @@ esp_err_t guiInit()
         }
     });
 
-    // encoder = new RotaryEncoder(GPIO_NUM_32, GPIO_NUM_33, GPIO_NUM_27);
-    // lcd::createLvglRotaryInputDev(*encoder);
-    // lv_indev_set_group(lcd::rotary_indev, g_group);
+    encoder = new RotaryEncoder((gpio_num_t)CONFIG_PRJ_PIN_ROTARY_CLK,
+                                (gpio_num_t)CONFIG_PRJ_PIN_ROTARY_DATA,
+                                (gpio_num_t)CONFIG_PRJ_PIN_ROTARY_SWITCH);
+    lcd::createLvglRotaryInputDev(*encoder);
+    lv_indev_set_group(lcd::rotary_indev, g_group);
 
     lv_disp_set_default(disp1);
     screen1 = createScreen1();
     lv_scr_load(screen1);
 
-
     lv_disp_set_default(disp2);
+
     screen2 = createScreen2();
-    lv_scr_load(screen2);
     lv_group_add_obj(g_group, screen2);
 
+    screen3 = createScreen3();
+    lv_group_add_obj(g_group, screen3);
+
+    lv_scr_load(screen2);
 
     return ESP_OK;
 }

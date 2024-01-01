@@ -1,0 +1,109 @@
+menu "Project configuration"
+
+
+    menu "SPI2 PINS"
+        config PRJ_PIN_SPI2_MISO
+            int "PRJ_PIN_SPI2_MISO"
+            range -1 60
+            default -1
+
+        config PRJ_PIN_SPI2_MOSI
+            int "PRJ_PIN_SPI2_MOSI"
+            range -1 60
+            default 10
+
+        config PRJ_PIN_SPI2_SCK
+            int "PRJ_PIN_SPI2_SCK"
+            range -1 60
+            default 47
+    endmenu
+
+    menu "SPI3 PINS"
+        config PRJ_PIN_SPI3_MISO
+            int "PRJ_PIN_SPI3_MISO"
+            range -1 60
+            default 2
+
+        config PRJ_PIN_SPI3_MOSI
+            int "PRJ_PIN_SPI3_MOSI"
+            range -1 60
+            default 1
+
+        config PRJ_PIN_SPI3_SCK
+            int "PRJ_PIN_SPI3_SCK"
+            range -1 60
+            default 21
+    endmenu
+
+    menu "I2C pins"
+        config PRJ_PIN_SDA
+            int "PRJ_PIN_SDA"
+            range 0 60
+            default 8
+
+        config PRJ_PIN_SCL
+            int "PRJ_PIN_SCL"
+            range 0 60
+            default 9
+    endmenu
+
+    menu "LORA setup"
+        choice
+            prompt "PRJ_LORA_SPI"
+
+            default PRJ_LORA_SPI3_HOST
+
+            config PRJ_LORA_SPI2_HOST
+                bool "SPI2_HOST"
+            config PRJ_LORA_SPI3_HOST
+                bool "SPI3_HOST"
+        endchoice
+
+        config PRJ_LORA_PIN_SS
+            int "PRJ_LORA_PIN_SS"
+            range 0 60
+            default 4
+
+        config PRJ_LORA_PIN_RST
+            int "PRJ_LORA_PIN_RST"
+            range 0 60
+            default 5
+
+    endmenu
+
+    menu "ST779 display"
+
+        choice
+            prompt "PRJ_ST7798_SPI"
+
+            default PRJ_ST7798_SPI2_HOST
+
+            config PRJ_ST7798_SPI2_HOST
+                bool "SPI2_HOST"
+            config PRJ_ST7798_SPI3_HOST
+                bool "SPI3_HOST"
+        endchoice
+
+        config PRJ_PIN_ST7789_RES
+            int "PRJ_PIN_ST7789_RES"
+            range -1 60
+            default 45
+
+        config PRJ_PIN_ST7789_DC
+            int "PRJ_PIN_ST7789_DC"
+            range -1 60
+            default 14
+
+        config PRJ_PIN_ST7789_BK_LIGHT
+            int "PRJ_PIN_ST7789_BK_LIGHT"
+            range -1 60
+            default 13
+
+        config PRJ_PIN_ST7789_CS
+            int "PRJ_PIN_ST7789_CS"
+            range -1 60
+            default -1
+
+    endmenu
+
+endmenu

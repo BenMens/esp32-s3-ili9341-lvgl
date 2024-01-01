@@ -16,11 +16,13 @@
 ESP_EVENT_DEFINE_BASE(GUI_EVENTS);
 
 static RotaryEncoder *encoder;
-static esp_lcd_panel_io_handle_t panel_io_handle;
+static esp_lcd_panel_io_handle_t ssd1306_panel_io_handle;
 static esp_lcd_panel_handle_t ssd1306_panel_handle;
+static esp_lcd_panel_io_handle_t st7798_panel_io_handle;
+static esp_lcd_panel_handle_t st7798_panel_handle;
 
 static lv_group_t *g_group;
-static lv_obj_t *screen1;
+static lv_obj_t *screen1, *screen2;
 static lv_obj_t *labelIpAddress;
 static lv_obj_t *cocoProtocol;
 static lv_obj_t *cocoAdres;
@@ -72,6 +74,29 @@ lv_obj_t *createScreen1()
     return scr;
 }
 
+lv_obj_t *createScreen2()
+{
+    lv_obj_t *label;
+
+    lcd::lvglLock(-1);
+
+    lv_obj_t *scr = lv_obj_create(NULL);
+
+    label = lv_label_create(scr);
+    lv_label_set_text(label, "QQ");
+    lv_obj_set_pos(label, 0, 0);
+    lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
+
+    label = lv_label_create(scr);
+    lv_label_set_text(label, "JJ");
+    lv_obj_set_pos(label, 80, 40);
+
+    lcd::lvglUnlock();
+
+    return scr;
+}
+
 static void custom_apply_cb(struct _lv_theme_t *theme, lv_obj_t *obj)
 {
     static bool initialized = false;
@@ -91,30 +116,52 @@ esp_err_t guiInit()
 {
     lcd::startLvgl();
 
-    panel_io_handle = display::createSdd1306I2CPanelIO(
+    ssd1306_panel_io_handle = display::createSsd1306I2CPanelIO(
         (esp_lcd_i2c_bus_handle_t)I2C_NUM_0, 0x3c);
 
-    ssd1306_panel_handle = display::createSdd1306Panel(panel_io_handle);
+    ssd1306_panel_handle = display::createSsd1306Panel(ssd1306_panel_io_handle);
 
     esp_lcd_panel_mirror(ssd1306_panel_handle, true, true);
 
-    lv_disp_t *disp =
-        lcd::registerDisplay(panel_io_handle, ssd1306_panel_handle,
-                             lcd::SSD1306, LCD_H_RES, LCD_V_RES, 24);
+    lv_disp_t *disp1 =
+        lcd::registerDisplay(ssd1306_panel_io_handle, ssd1306_panel_handle,
+                             lcd::SSD1306, 128, 64, 24);
 
-    // encoder = new RotaryEncoder(GPIO_NUM_32, GPIO_NUM_33, GPIO_NUM_27);
+    lv_theme_t *th1 = lv_theme_mono_init(disp1, false, &lv_font_montserrat_12);
 
-    // lcd::createLvglRotaryInputDev(*encoder);
+    static lv_theme_t th_new1;
+    lv_theme_set_parent(&th_new1, th1);
 
-    lv_theme_t *th = lv_theme_mono_init(disp, false, &lv_font_montserrat_12);
+    lv_theme_set_apply_cb(&th_new1, custom_apply_cb);
 
-    static lv_theme_t th_new;
-    lv_theme_set_parent(&th_new, th);
+    lv_disp_set_theme(disp1, &th_new1);
+    th_new1.font_large = &lv_font_montserrat_20;
 
-    lv_theme_set_apply_cb(&th_new, custom_apply_cb);
 
-    lv_disp_set_theme(disp, &th_new);
-    th_new.font_large = &lv_font_montserrat_20;
+    st7798_panel_io_handle = display::createSt7789SpiPanelIO(
+        SPI2_HOST, (gpio_num_t)CONFIG_PRJ_PIN_ST7789_CS,
+        (gpio_num_t)CONFIG_PRJ_PIN_ST7789_DC, 8, 8, 20 * 1000 * 1000);
+
+    st7798_panel_handle = display::createSt7789Panel(
+        st7798_panel_io_handle, (gpio_num_t)CONFIG_PRJ_PIN_ST7789_RES);
+
+    lv_disp_t *disp2 = lcd::registerDisplay(
+        st7798_panel_io_handle, st7798_panel_handle, lcd::ST7789, 240, 240, 16);
+
+    display::setupBacklightPin((gpio_num_t)CONFIG_PRJ_PIN_ST7789_BK_LIGHT);
+    display::setBacklight((gpio_num_t)CONFIG_PRJ_PIN_ST7789_BK_LIGHT, 1);
+
+    lv_theme_t *th2 = lv_theme_default_init(
+        NULL, lv_palette_main(LV_PALETTE_BLUE),
+        lv_palette_main(LV_PALETTE_CYAN), false, &lv_font_montserrat_14);
+
+    static lv_theme_t th_new2;
+    lv_theme_set_parent(&th_new2, th2);
+
+    lv_theme_set_apply_cb(&th_new2, custom_apply_cb);
+
+    lv_disp_set_theme(disp2, &th_new2);
+    th_new2.font_large = &lv_font_montserrat_20;
 
     g_group = lv_group_create();
     lv_group_set_default(g_group);
@@ -129,10 +176,21 @@ esp_err_t guiInit()
                              0, false);
         }
     });
+
+    // encoder = new RotaryEncoder(GPIO_NUM_32, GPIO_NUM_33, GPIO_NUM_27);
+    // lcd::createLvglRotaryInputDev(*encoder);
     // lv_indev_set_group(lcd::rotary_indev, g_group);
 
+    lv_disp_set_default(disp1);
     screen1 = createScreen1();
-    lv_group_add_obj(g_group, screen1);
+    lv_scr_load(screen1);
+
+
+    lv_disp_set_default(disp2);
+    screen2 = createScreen2();
+    lv_scr_load(screen2);
+    lv_group_add_obj(g_group, screen2);
+
 
     return ESP_OK;
 }

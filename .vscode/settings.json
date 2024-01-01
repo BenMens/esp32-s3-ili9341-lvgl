@@ -13,7 +13,7 @@
     "idf.port": "/dev/cu.usbmodem14101",
     "idf.pythonBinPath": "/Users/benmens/.espressif/python_env/idf5.1_py3.11_env/bin/python",
     "idf.toolsPath": "/Users/benmens/.espressif",
-    "idf.flashType": "UART",
+    "idf.flashType": "JTAG",
     "C_Cpp.default.compilerPath": "/Users/benmens/.espressif/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc",
     "idf.gitPath": "/usr/local/bin/git"
 }

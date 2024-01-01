@@ -25,16 +25,11 @@ static Pixels *neoPixels = NULL;
 
 #define EXAMPLE_LCD_PIXEL_CLOCK_HZ (400 * 1000)
 
-#define PIN_NUM_SDA (gpio_num_t)(8)
-#define PIN_NUM_SCL (gpio_num_t)(9)
-
-#define PIN_SPI3_MISO (gpio_num_t)(2)
-#define PIN_SPI3_MOSI (gpio_num_t)(1)
-#define PIN_SPI3_SCK (gpio_num_t)(21)
-
+#if CONFIG_PRJ_LORA_SPI3_HOST == 1
 #define LORA_SPI SPI3_HOST
-#define LORA_SS (gpio_num_t)(4)
-#define LORA_RST (gpio_num_t)(5)
+#else if CONFIG_PRJ_LORA_SPI2_HOST == 1
+#define LORA_SPI SPI2_HOST
+#endif
 
 static sx127x *sx127xDevice = NULL;
 
@@ -45,7 +40,6 @@ static sx127x *sx127xDevice = NULL;
 #define ACK_CHECK_DIS 0x0 /*!< I2C master will not check ack from slave */
 #define ACK_VAL 0x0       /*!< I2C ack value */
 #define NACK_VAL 0x1      /*!< I2C nack value */
-
 
 static adc_oneshot_unit_handle_t oneshot_handle;
 
@@ -59,11 +53,11 @@ void setupLora()
     dev_cfg.mode = 0;
     dev_cfg.clock_source = SPI_CLK_SRC_DEFAULT;
     dev_cfg.clock_speed_hz = 1000000;
-    dev_cfg.spics_io_num = LORA_SS;
+    dev_cfg.spics_io_num = (gpio_num_t)(CONFIG_PRJ_LORA_PIN_SS);
     dev_cfg.queue_size = 16;
 
     spi_device_handle_t spi_device;
-    ESP_ERROR_CHECK(spi_bus_add_device(SPI3_HOST, &dev_cfg, &spi_device));
+    ESP_ERROR_CHECK(spi_bus_add_device(LORA_SPI, &dev_cfg, &spi_device));
 
     ESP_ERROR_CHECK(sx127x_create(spi_device, &sx127xDevice));
 
@@ -86,12 +80,12 @@ void setupLora()
         sx127x_fsk_ook_get_raw_temperature(sx127xDevice, &raw_temperature));
     ESP_LOGI(TAG, "raw temperature: %d", raw_temperature);
 
-    uint8_t registers[0x80];
-    sx127x_dump_registers(registers, sx127xDevice);
+    // uint8_t registers[0x80];
+    // sx127x_dump_registers(registers, sx127xDevice);
 
-    for (unsigned int i = 0; i < 0x80; i++) {
-        ESP_LOGI(TAG, "%02x = %02x", i, registers[i]);
-    }
+    // for (unsigned int i = 0; i < 0x80; i++) {
+    //     ESP_LOGI(TAG, "%02x = %02x", i, registers[i]);
+    // }
 
     // ESP_ERROR_CHECK(sx127x_set_frequency(433920000, sx127xDevice));
 
@@ -222,11 +216,29 @@ extern "C" void app_main(void)
                            });
     neoPixels->write();
 
+    ESP_LOGI(TAG, "setup SPI2_HOST");
+    spi_bus_config_t buscfg2 = {
+        .mosi_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI2_MOSI),
+        .miso_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI2_MISO),
+        .sclk_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI2_SCK),
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .data4_io_num = 0,
+        .data5_io_num = 0,
+        .data6_io_num = 0,
+        .data7_io_num = 0,
+        .max_transfer_sz = 24 * 240 * 2 + 8, // TODO parameterize this based on LCD settings
+        .flags = 0,
+        .isr_cpu_id = (intr_cpu_id_t)0,
+        .intr_flags = 0,
+    };
+   ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg2, SPI_DMA_CH_AUTO));
+
     ESP_LOGI(TAG, "setup SPI3_HOST");
-    spi_bus_config_t buscfg = {
-        .mosi_io_num = PIN_SPI3_MOSI,
-        .miso_io_num = PIN_SPI3_MISO,
-        .sclk_io_num = PIN_SPI3_SCK,
+    spi_bus_config_t buscfg3= {
+        .mosi_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_MOSI),
+        .miso_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_MISO),
+        .sclk_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_SCK),
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
         .data4_io_num = 0,
@@ -238,15 +250,15 @@ extern "C" void app_main(void)
         .isr_cpu_id = (intr_cpu_id_t)0,
         .intr_flags = 0,
     };
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
+    ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg3, SPI_DMA_CH_AUTO));
 
     setupLora();
 
     ESP_LOGI(TAG, "Initialize I2C bus");
     i2c_config_t i2c_conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = PIN_NUM_SDA,
-        .scl_io_num = PIN_NUM_SCL,
+        .sda_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SDA),
+        .scl_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SCL),
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master =

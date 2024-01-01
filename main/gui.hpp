@@ -16,9 +16,6 @@ typedef union {
 
 } gui_event_t;
 
-#define LCD_H_RES 128
-#define LCD_V_RES 64
-
 esp_err_t guiInit();
 
 #endif

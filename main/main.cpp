@@ -2,8 +2,10 @@
 #include <string.h>
 #include <sx127x.h>
 
+#include "df-player.hpp"
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
+#include "driver/uart.h"
 #include "esp-display.hpp"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
@@ -21,27 +23,83 @@
 
 #define NUM_LEDS 1
 
+#define MP3_RX 15
+#define MP3_TX 7
+
 static Pixels *neoPixels = NULL;
 
-#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (400 * 1000)
-
-#if CONFIG_PRJ_LORA_SPI3_HOST == 1
-#define LORA_SPI SPI3_HOST
-#else if CONFIG_PRJ_LORA_SPI2_HOST == 1
+#if CONFIG_PRJ_LORA_SPI1_HOST == 1
+#define LORA_SPI SPI1_HOST
+#elif CONFIG_PRJ_LORA_SPI2_HOST == 1
 #define LORA_SPI SPI2_HOST
+#elif CONFIG_PRJ_LORA_SPI3_HOST == 1
+#define LORA_SPI SPI3_HOST
 #endif
 
-static sx127x *sx127xDevice = NULL;
-
-#define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
-#define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
-#define WRITE_BIT I2C_MASTER_WRITE  /*!< I2C master write */
-#define ACK_CHECK_EN 0x1            /*!< I2C master will check ack from slave*/
-#define ACK_CHECK_DIS 0x0 /*!< I2C master will not check ack from slave */
-#define ACK_VAL 0x0       /*!< I2C ack value */
-#define NACK_VAL 0x1      /*!< I2C nack value */
+struct LoraMsg {
+    int id;
+    int counter;
+};
 
 static adc_oneshot_unit_handle_t oneshot_handle;
+
+sx127x *sx127xDevice = NULL;
+TaskHandle_t handle_interrupt;
+int messages_sent = 0;
+int supported_power_levels[] = {
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20,
+};
+int supported_power_levels_count = sizeof(supported_power_levels) / sizeof(int);
+int current_power_level = 0;
+
+void IRAM_ATTR handle_interrupt_fromisr(void *arg)
+{
+    xTaskResumeFromISR(handle_interrupt);
+}
+
+void handle_interrupt_task(void *arg)
+{
+    while (1) {
+        vTaskSuspend(NULL);
+        sx127x_handle_interrupt((sx127x *)arg);
+    }
+}
+
+void tx_callback(sx127x *device)
+{
+    if (messages_sent > 0) {
+        ESP_LOGI(TAG, "transmitted");
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+
+    LoraMsg msg = {
+        .id = 42,
+        .counter = messages_sent,
+    };
+
+    ESP_ERROR_CHECK(sx127x_lora_tx_set_for_transmission((uint8_t *)&msg,
+                                                        sizeof(msg), device));
+
+    ESP_ERROR_CHECK(
+        sx127x_set_opmod(SX127x_MODE_TX, SX127x_MODULATION_LORA, device));
+    ESP_LOGI(TAG, "transmitting message %u", messages_sent);
+
+    messages_sent++;
+}
+
+void cad_callback(sx127x *device, int cad_detected)
+{
+    if (cad_detected == 0) {
+        ESP_LOGI(TAG, "cad not detected");
+        ESP_ERROR_CHECK(
+            sx127x_set_opmod(SX127x_MODE_CAD, SX127x_MODULATION_LORA, device));
+        return;
+    }
+    // put into RX mode first to handle interrupt as soon as possible
+    ESP_ERROR_CHECK(
+        sx127x_set_opmod(SX127x_MODE_RX_CONT, SX127x_MODULATION_LORA, device));
+    ESP_LOGI(TAG, "cad detected\n");
+}
 
 void setupLora()
 {
@@ -56,29 +114,10 @@ void setupLora()
     dev_cfg.spics_io_num = (gpio_num_t)(CONFIG_PRJ_LORA_PIN_SS);
     dev_cfg.queue_size = 16;
 
-    spi_device_handle_t spi_device;
-    ESP_ERROR_CHECK(spi_bus_add_device(LORA_SPI, &dev_cfg, &spi_device));
+    spi_device_handle_t lora_spi_device;
+    ESP_ERROR_CHECK(spi_bus_add_device(LORA_SPI, &dev_cfg, &lora_spi_device));
 
-    ESP_ERROR_CHECK(sx127x_create(spi_device, &sx127xDevice));
-
-    ESP_ERROR_CHECK(sx127x_set_opmod(SX127x_MODE_SLEEP, SX127x_MODULATION_OOK,
-                                     sx127xDevice));
-
-    ESP_ERROR_CHECK(sx127x_set_opmod(SX127x_MODE_FSRX, SX127x_MODULATION_FSK,
-                                     sx127xDevice));
-    // enable temp monitoring
-    ESP_ERROR_CHECK(sx127x_fsk_ook_set_temp_monitor(true, sx127xDevice));
-    // a little bit longer for FSRX mode to kick off
-    vTaskDelay(0.1 / portTICK_PERIOD_MS);
-    // disable temp monitoring
-    ESP_ERROR_CHECK(sx127x_fsk_ook_set_temp_monitor(false, sx127xDevice));
-    ESP_ERROR_CHECK(sx127x_set_opmod(SX127x_MODE_SLEEP, SX127x_MODULATION_FSK,
-                                     sx127xDevice));
-
-    int8_t raw_temperature;
-    ESP_ERROR_CHECK(
-        sx127x_fsk_ook_get_raw_temperature(sx127xDevice, &raw_temperature));
-    ESP_LOGI(TAG, "raw temperature: %d", raw_temperature);
+    ESP_ERROR_CHECK(sx127x_create(lora_spi_device, &sx127xDevice));
 
     // uint8_t registers[0x80];
     // sx127x_dump_registers(registers, sx127xDevice);
@@ -87,39 +126,43 @@ void setupLora()
     //     ESP_LOGI(TAG, "%02x = %02x", i, registers[i]);
     // }
 
-    // ESP_ERROR_CHECK(sx127x_set_frequency(433920000, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_set_opmod(SX127x_MODE_SLEEP, SX127x_MODULATION_LORA,
+                                     sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_set_frequency(865123456, sx127xDevice));
 
-    // ESP_ERROR_CHECK(
-    //     sx127x_set_opmod(SX127x_MODE_STANDBY, SX127x_MODULATION_OOK,
-    //     sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_lora_reset_fifo(sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_set_opmod(SX127x_MODE_STANDBY,
+                                     SX127x_MODULATION_LORA, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_lora_set_bandwidth(SX127x_BW_125000, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_lora_set_implicit_header(NULL, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_lora_set_modem_config_2(SX127x_SF_9, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_lora_set_syncword(18, sx127xDevice));
+    ESP_ERROR_CHECK(sx127x_set_preamble_length(8, sx127xDevice));
+    sx127x_tx_set_callback(tx_callback, sx127xDevice);
 
-    // ESP_ERROR_CHECK(sx127x_fsk_ook_set_continuous_mode(sx127xDevice));
+    BaseType_t task_code = xTaskCreatePinnedToCore(
+        handle_interrupt_task, "handle interrupt", 8196, sx127xDevice, 2,
+        &handle_interrupt, xPortGetCoreID());
+    if (task_code != pdPASS) {
+        ESP_LOGE(TAG, "can't create task %d", task_code);
+        sx127x_destroy(sx127xDevice);
+        return;
+    }
 
-    // ESP_ERROR_CHECK(sx127x_fsk_ook_rx_set_afc_auto(false, sx127xDevice));
-    // ESP_ERROR_CHECK(sx127x_fsk_ook_rx_set_bandwidth(5000.0, sx127xDevice));
+    gpio_set_direction((gpio_num_t)CONFIG_PRJ_LORA_PIN_DIO0, GPIO_MODE_INPUT);
+    gpio_pulldown_en((gpio_num_t)CONFIG_PRJ_LORA_PIN_DIO0);
+    gpio_pullup_dis((gpio_num_t)CONFIG_PRJ_LORA_PIN_DIO0);
+    gpio_set_intr_type((gpio_num_t)CONFIG_PRJ_LORA_PIN_DIO0, GPIO_INTR_POSEDGE);
+    gpio_isr_handler_add((gpio_num_t)CONFIG_PRJ_LORA_PIN_DIO0,
+                         handle_interrupt_fromisr, (void *)sx127xDevice);
 
-    // // ESP_ERROR_CHECK(sx127x_rx_set_lna_gain(SX127x_LNA_GAIN_AUTO, device));
-    // ESP_ERROR_CHECK(sx127x_rx_set_lna_gain(SX127x_LNA_GAIN_G3,
-    // sx127xDevice));
+    ESP_ERROR_CHECK(
+        sx127x_tx_set_pa_config(SX127x_PA_PIN_BOOST, 13, sx127xDevice));
+    sx127x_tx_header_t header = {.enable_crc = true,
+                                 .coding_rate = SX127x_CR_4_5};
+    ESP_ERROR_CHECK(sx127x_lora_tx_set_explicit_header(&header, sx127xDevice));
 
-    // ESP_ERROR_CHECK(sx127x_fsk_ook_set_bitrate(2000.0, sx127xDevice));
-
-    // // ESP_ERROR_CHECK(sx127x_ook_rx_set_peak_mode(SX127X_0_5_DB, 0x0C,
-    // // SX127X_1_1_CHIP, device));
-    // ESP_ERROR_CHECK(sx127x_ook_rx_set_fixed_mode(0x20, sx127xDevice));
-
-    // // ESP_ERROR_CHECK(sx127x_ook_rx_set_fixed_mode(SX127X_6_0_DB, device));
-
-    // ESP_ERROR_CHECK(sx127x_fsk_ook_rx_set_rssi_config(SX127X_8, 0,
-    // sx127xDevice));
-
-    // ESP_ERROR_CHECK(sx127x_ook_set_data_shaping(SX127X_OOK_SHAPING_NONE,
-    //                                             SX127X_PA_RAMP_10,
-    //                                             sx127xDevice));
-
-    // ESP_ERROR_CHECK(
-    //     sx127x_set_opmod(SX127x_MODE_RX_CONT, SX127x_MODULATION_OOK,
-    //     sx127xDevice));
+    tx_callback(sx127xDevice);
 }
 
 static int scanI2CBus()
@@ -134,8 +177,7 @@ static int scanI2CBus()
 
             i2c_cmd_handle_t cmd = i2c_cmd_link_create();
             i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (address << 1) | WRITE_BIT,
-                                  ACK_CHECK_EN);
+            i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_WRITE, 0x01);
             i2c_master_stop(cmd);
 
             esp_err_t ret =
@@ -227,15 +269,16 @@ extern "C" void app_main(void)
         .data5_io_num = 0,
         .data6_io_num = 0,
         .data7_io_num = 0,
-        .max_transfer_sz = 24 * 240 * 2 + 8, // TODO parameterize this based on LCD settings
+        .max_transfer_sz =
+            24 * 240 * 2 + 8,  // TODO parameterize this based on LCD settings
         .flags = 0,
         .isr_cpu_id = (intr_cpu_id_t)0,
         .intr_flags = 0,
     };
-   ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg2, SPI_DMA_CH_AUTO));
+    ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg2, SPI_DMA_CH_AUTO));
 
     ESP_LOGI(TAG, "setup SPI3_HOST");
-    spi_bus_config_t buscfg3= {
+    spi_bus_config_t buscfg3 = {
         .mosi_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_MOSI),
         .miso_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_MISO),
         .sclk_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI3_SCK),
@@ -263,37 +306,71 @@ extern "C" void app_main(void)
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master =
             {
-                .clk_speed = EXAMPLE_LCD_PIXEL_CLOCK_HZ,
+                .clk_speed = CONFIG_PRJ_I2C_CLOCK_SPEED,
             },
         .clk_flags = 0,
     };
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &i2c_conf));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
 
-    // scanI2CBus();
+    scanI2CBus();
 
     guiInit();
+
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0,
+        .source_clk = UART_SCLK_DEFAULT,
+    };
+
+    // Configure UART parameters
+    const int uart_buffer_size = (200);
+    // QueueHandle_t uart_queue;
+    // Install UART driver using an event queue here
+    ESP_ERROR_CHECK(
+        uart_driver_install(UART_NUM_2, uart_buffer_size, 0, 0, NULL, 0));
+
+    ESP_ERROR_CHECK(uart_param_config(UART_NUM_2, &uart_config));
+
+    ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, MP3_TX, MP3_RX, UART_PIN_NO_CHANGE,
+                                 UART_PIN_NO_CHANGE));
 
     // setupJoystick();
 
     // static int adc_raw[2];
     // static int voltage[2];
-    while (true) {
-        // ESP_ERROR_CHECK(
-        //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_4, &adc_raw[0]));
-        // ESP_ERROR_CHECK(
-        //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_5, &adc_raw[1]));
-        // ESP_LOGI(TAG, "x=%d y=%d", adc_raw[0], adc_raw[1]);
-        // if (calibration_handle) {
-        //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
-        //     //                                         adc_raw[0],
-        //     //                                         &voltage[0]));
-        //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
-        //     //                                         adc_raw[1],
-        //     //                                         &voltage[1]));
-        //     ESP_LOGI(TAG, "x=%d mV y=%d mV", voltage[0], voltage[1]);
-        // }
 
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // DFPlayerMini_Fast player;
+
+    // player.begin(UART_NUM_2, false, 1000);
+
+    // player.volume(10);
+
+    // while (true) {
+    //     player.playFromMP3Folder(15);
+    //     player.query(0x42, 0, 0);
+
+    //     // ESP_ERROR_CHECK(
+    //     //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_4, &adc_raw[0]));
+    //     // ESP_ERROR_CHECK(
+    //     //     adc_oneshot_read(oneshot_handle, ADC_CHANNEL_5, &adc_raw[1]));
+    //     // ESP_LOGI(TAG, "x=%d y=%d", adc_raw[0], adc_raw[1]);
+    //     // if (calibration_handle) {
+    //     //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
+    //     //     //                                         adc_raw[0],
+    //     //     //                                         &voltage[0]));
+    //     //     // ESP_ERROR_CHECK(adc_cali_raw_to_voltage(calibration_handle,
+    //     //     //                                         adc_raw[1],
+    //     //     //                                         &voltage[1]));
+    //     //     ESP_LOGI(TAG, "x=%d mV y=%d mV", voltage[0], voltage[1]);
+    //     // }
+
+    //     vTaskDelay(10000 / portTICK_PERIOD_MS);
+    // }
 }

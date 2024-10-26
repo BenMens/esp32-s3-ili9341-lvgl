@@ -16,6 +16,7 @@ idf_component_register(
         rotary-encoder
         display
         display-lvgl
+        df-player
         lvgl
 
 )

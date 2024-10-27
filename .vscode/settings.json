@@ -13,7 +13,6 @@
     "ESP_ROM_ELF_DIR": "/Users/benmens/.espressif/tools/esp-rom-elfs/20240305/"
   },
   "idf.gitPath": "/usr/local/bin/git",
-  "C_Cpp.default.compilerPath": "${config:idf.toolsPath}/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc",
   "idf.port": "/dev/tty.usbmodem1101",
   "idf.flashType": "JTAG"
 }

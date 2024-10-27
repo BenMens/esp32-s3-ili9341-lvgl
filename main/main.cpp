@@ -1,6 +1,5 @@
-#include <sx127x.h>
-
 #include <string.h>
+#include <sx127x.h>
 
 #include "df-player.hpp"
 #include "driver/i2c.h"
@@ -317,38 +316,36 @@ extern "C" void app_main(void)
 
     guiInit();
 
-    uart_config_t uart_config = {
-        .baud_rate = 9600,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 0,
-        .source_clk = UART_SCLK_DEFAULT,
-        .flags =
-            {
-                .backup_before_sleep = 0,
-            },
-    };
+    // uart_config_t uart_config = {
+    //     .baud_rate = 9600,
+    //     .data_bits = UART_DATA_8_BITS,
+    //     .parity = UART_PARITY_DISABLE,
+    //     .stop_bits = UART_STOP_BITS_1,
+    //     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    //     .rx_flow_ctrl_thresh = 0,
+    //     .source_clk = UART_SCLK_DEFAULT,
+    //     .flags =
+    //         {
+    //             .backup_before_sleep = 0,
+    //         },
+    // };
 
     // Configure UART parameters
-    const int uart_buffer_size = (200);
+    // const int uart_buffer_size = (200);
     // QueueHandle_t uart_queue;
     // Install UART driver using an event queue here
-    ESP_ERROR_CHECK(
-        uart_driver_install(UART_NUM_2, uart_buffer_size, 0, 0, NULL, 0));
+    // ESP_ERROR_CHECK(
+    //     uart_driver_install(UART_NUM_2, uart_buffer_size, 0, 0, NULL, 0));
 
-    ESP_ERROR_CHECK(uart_param_config(UART_NUM_2, &uart_config));
+    // ESP_ERROR_CHECK(uart_param_config(UART_NUM_2, &uart_config));
 
-    ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, MP3_TX, MP3_RX, UART_PIN_NO_CHANGE,
-                                 UART_PIN_NO_CHANGE));
+    // ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, MP3_TX, MP3_RX, UART_PIN_NO_CHANGE,
+    //                              UART_PIN_NO_CHANGE));
 
     // setupJoystick();
 
     // static int adc_raw[2];
     // static int voltage[2];
-
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
 
     // DFPlayerMini_Fast player;
 
@@ -377,4 +374,6 @@ extern "C" void app_main(void)
 
     //     vTaskDelay(10000 / portTICK_PERIOD_MS);
     // }
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
 }

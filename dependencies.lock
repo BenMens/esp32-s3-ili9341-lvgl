@@ -1,4 +1,11 @@
 dependencies:
+  dernasherbrezon/sx127x:
+    component_hash: 10ab7be920975e282c93610391c2cbfad25eaf8bfa6cd9c4f8f0be765ddc4b28
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 3.2.1
   idf:
     source:
       type: idf
@@ -11,8 +18,9 @@ dependencies:
       type: service
     version: 8.4.0
 direct_dependencies:
+- dernasherbrezon/sx127x
 - idf
 - lvgl/lvgl
-manifest_hash: 1f2e63b3446fd2d3a08ab4e0e106ae363d4f677eed8aad151104b01beccd0b93
+manifest_hash: 5f364793d2a91eba484b2b1dc8bbe0b4fc887169b83bb331b7ed1294bd0635ce
 target: esp32s3
 version: 2.0.0

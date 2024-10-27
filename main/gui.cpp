@@ -32,7 +32,7 @@ static esp_lcd_panel_io_handle_t st7798_panel_io_handle;
 static esp_lcd_panel_handle_t st7798_panel_handle;
 
 static lv_group_t *g_group;
-static lv_obj_t *screen1, *screen2, *screen3;
+static lv_obj_t *screen1, *screen2;
 static lv_obj_t *labelIpAddress;
 static lv_obj_t *slider_label;
 static lv_obj_t *slider;

@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <string.h>
 #include <sx127x.h>
+
+#include <string.h>
 
 #include "df-player.hpp"
 #include "driver/i2c.h"
@@ -209,7 +209,7 @@ void setupJoystick()
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config2, &oneshot_handle));
 
     adc_oneshot_chan_cfg_t acd_config = {
-        .atten = ADC_ATTEN_DB_11,
+        .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
 
@@ -226,7 +226,7 @@ void setupJoystick()
     adc_cali_curve_fitting_config_t cali_config = {
         .unit_id = ADC_UNIT_2,
         .chan = ADC_CHANNEL_4,
-        .atten = ADC_ATTEN_DB_11,
+        .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
     ret =
@@ -272,7 +272,7 @@ extern "C" void app_main(void)
         .max_transfer_sz =
             24 * 240 * 2 + 8,  // TODO parameterize this based on LCD settings
         .flags = 0,
-        .isr_cpu_id = (intr_cpu_id_t)0,
+        .isr_cpu_id = (esp_intr_cpu_affinity_t)0,
         .intr_flags = 0,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg2, SPI_DMA_CH_AUTO));
@@ -290,7 +290,7 @@ extern "C" void app_main(void)
         .data7_io_num = 0,
         .max_transfer_sz = 200000,
         .flags = 0,
-        .isr_cpu_id = (intr_cpu_id_t)0,
+        .isr_cpu_id = (esp_intr_cpu_affinity_t)0,
         .intr_flags = 0,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg3, SPI_DMA_CH_AUTO));
@@ -325,6 +325,10 @@ extern "C" void app_main(void)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 0,
         .source_clk = UART_SCLK_DEFAULT,
+        .flags =
+            {
+                .backup_before_sleep = 0,
+            },
     };
 
     // Configure UART parameters

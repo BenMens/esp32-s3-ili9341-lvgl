@@ -1,5 +1,5 @@
 dependencies:
   # dernasherbrezon/sx127x: "^3.1.1"
-  # lvgl/lvgl: "^8.3.11"
+  lvgl/lvgl: "^8.4.0"
   idf:
     version: ">=4.1.0"

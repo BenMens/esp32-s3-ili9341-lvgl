@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-enum-enum-conversion>)
+
 list(APPEND EXTRA_COMPONENT_DIRS)
 
 project(esp32-s3-sandbox)

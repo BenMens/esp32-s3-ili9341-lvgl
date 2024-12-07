@@ -10,4 +10,4 @@ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-enum-enum-conversi
 
 list(APPEND EXTRA_COMPONENT_DIRS)
 
-project(esp32-s3-sandbox)
+project(esp32-s3-ili9341)

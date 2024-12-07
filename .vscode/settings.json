@@ -5,14 +5,14 @@
     "board/esp32s3-builtin.cfg"
   ],
   "idf.espIdfPath": "/Users/benmens/esp/v5.3.1/esp-idf",
-  "idf.pythonBinPath": "/Users/benmens/.espressif/python_env/idf5.3_py3.11_env/bin/python",
+  "idf.pythonBinPath": "/Users/benmens/.espressif/python_env/idf5.3_py3.13_env/bin/python",
   "idf.toolsPath": "/Users/benmens/.espressif",
   "idf.customExtraPaths": "/Users/benmens/.espressif/tools/xtensa-esp-elf-gdb/14.2_20240403/xtensa-esp-elf-gdb/bin:/Users/benmens/.espressif/tools/riscv32-esp-elf-gdb/14.2_20240403/riscv32-esp-elf-gdb/bin:/Users/benmens/.espressif/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin:/Users/benmens/.espressif/tools/riscv32-esp-elf/esp-13.2.0_20240530/riscv32-esp-elf/bin:/Users/benmens/.espressif/tools/esp32ulp-elf/2.38_20240113/esp32ulp-elf/bin:/Users/benmens/.espressif/tools/cmake/3.24.0/CMake.app/Contents/bin:/Users/benmens/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240318/openocd-esp32/bin:/Users/benmens/.espressif/tools/ninja/1.11.1:/Users/benmens/.espressif/tools/esp-rom-elfs/20240305",
   "idf.customExtraVars": {
     "OPENOCD_SCRIPTS": "/Users/benmens/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240318/openocd-esp32/share/openocd/scripts",
     "ESP_ROM_ELF_DIR": "/Users/benmens/.espressif/tools/esp-rom-elfs/20240305/"
   },
-  "idf.gitPath": "/usr/local/bin/git",
-  "idf.port": "/dev/tty.usbmodem1101",
+  "idf.gitPath": "git",
+  "idf.port": "/dev/tty.usbmodem101",
   "idf.flashType": "JTAG"
 }

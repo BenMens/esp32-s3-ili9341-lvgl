@@ -1,155 +1,42 @@
 menu "Project configuration"
 
-    menu "SPI1 PINS"
-        config PRJ_PIN_SPI1_MISO
-            int "PIN_SPI1_MISO"
-            range -1 60
-            default -1
-
-        config PRJ_PIN_SPI1_MOSI
-            int "PIN_SPI1_MOSI"
-            range -1 60
-            default -1
-
-        config PRJ_PIN_SPI1_SCK
-            int "PIN_SPI1_SCK"
-            range -1 60
-            default -1
-    endmenu
-
     menu "SPI2 PINS"
         config PRJ_PIN_SPI2_MISO
             int "PIN_SPI2_MISO"
             range -1 60
-            default -1
+            default 13
 
         config PRJ_PIN_SPI2_MOSI
             int "PIN_SPI2_MOSI"
             range -1 60
-            default 10
+            default 11
 
         config PRJ_PIN_SPI2_SCK
             int "PIN_SPI2_SCK"
             range -1 60
-            default 47
+            default 12
     endmenu
 
-    menu "SPI3 PINS"
-        config PRJ_PIN_SPI3_MISO
-            int "PIN_SPI3_MISO"
-            range -1 60
-            default 2
-
-        config PRJ_PIN_SPI3_MOSI
-            int "PIN_SPI3_MOSI"
-            range -1 60
-            default 1
-
-        config PRJ_PIN_SPI3_SCK
-            int "PIN_SPI3_SCK"
-            range -1 60
-            default 21
-    endmenu
-
-    menu "I2C setup"
-        config PRJ_I2C_CLOCK_SPEED
-            int "CLK SPEED"
-            default 400000
-
-        config PRJ_PIN_SDA
-            int "PRJ_PIN_SDA"
-            range 0 60
-            default 8
-
-        config PRJ_PIN_SCL
-            int "PRJ_PIN_SCL"
-            range 0 60
-            default 9
-    endmenu
-
-    menu "LORA setup"
-        choice
-            prompt "LORA SPI"
-
-            default PRJ_LORA_SPI3_HOST
-
-            config PRJ_LORA_SPI1_HOST
-                bool "SPI1"
-            config PRJ_LORA_SPI2_HOST
-                bool "SPI2"
-            config PRJ_LORA_SPI3_HOST
-                bool "SPI3"
-        endchoice
-
-        config PRJ_LORA_PIN_SS
-            int "PIN_SS"
-            range -1 60
-            default -1
-
-        config PRJ_LORA_PIN_RST
-            int "PIN_RST"
-            range -1 60
-            default -1
-
-        config PRJ_LORA_PIN_DIO0
-            int "PIN_DIO0"
-            range -1 60
-            default -1
-    endmenu
-
-    menu "ST779 display"
-
-        choice
-            prompt "ST7798 SPI"
-
-            default PRJ_ST7798_SPI2_HOST
-
-            config PRJ_ST7798_SPI1_HOST
-                bool "SPI1"
-            config PRJ_ST7798_SPI2_HOST
-                bool "SPI2"
-            config PRJ_ST7798_SPI3_HOST
-                bool "SPI3"
-        endchoice
-
-        config PRJ_PIN_ST7789_RES
+    menu "Ili9341 display"
+        config PRJ_PIN_ILI9341_RES
             int "PIN_RES"
             range -1 60
-            default 45
+            default 6
 
-        config PRJ_PIN_ST7789_DC
+        config PRJ_PIN_ILI9341_DC
             int "PIN_DC"
             range -1 60
-            default 14
+            default 7
 
-        config PRJ_PIN_ST7789_BK_LIGHT
+        config PRJ_PIN_ILI9341_BK_LIGHT
             int "PIN_BK_LIGHT"
             range -1 60
-            default 13
+            default 21
 
-        config PRJ_PIN_ST7789_CS
+        config PRJ_PIN_ILI9341_CS
             int "PIN_CS"
             range -1 60
-            default -1
-    endmenu
-
-    menu "Rotary encoder"
-
-        config PRJ_PIN_ROTARY_CLK
-            int "PIN_CLK"
-            range 0 60
-            default 12
-
-        config PRJ_PIN_ROTARY_DATA
-            int "PIN_DATA"
-            range 0 60
-            default 11
-
-        config PRJ_PIN_ROTARY_SWITCH
-            int "PIN_SWITCH"
-            range 0 60
-            default 39
-
+            default 10
     endmenu
 
 endmenu

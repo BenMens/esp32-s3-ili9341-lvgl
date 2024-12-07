@@ -1,5 +1,5 @@
 dependencies:
-  dernasherbrezon/sx127x: "^3.2.1"
-  lvgl/lvgl: "^8.4.0"
+  lvgl/lvgl: ^8.4.0
   idf:
-    version: ">=4.1.0"
+    version: '>=4.1.0'
+  espressif/esp_lcd_ili9341: ==1.0.0

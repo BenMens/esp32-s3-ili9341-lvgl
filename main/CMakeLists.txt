@@ -12,11 +12,7 @@ idf_component_register(
         esp_lcd
         esp_adc
         neopixel
-        sx127x
-        rotary-encoder
         display
         display-lvgl
-        df-player
         lvgl
-
 )

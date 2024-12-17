@@ -1,6 +1,7 @@
 set(srcs
     "main.cpp"
     "gui.cpp"
+    "wifi.cpp"
 )
 
 idf_component_register(
@@ -15,4 +16,7 @@ idf_component_register(
         display
         display-lvgl
         lvgl
+        esp_wifi
+        nvs_flash
+        wifi_provisioning
 )

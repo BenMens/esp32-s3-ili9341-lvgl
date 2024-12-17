@@ -3,19 +3,14 @@
 
 #include "driver/spi_master.h"
 #include "esp_event.h"
+#include "esp_lcd_types.h"
+#include "lvgl.h"
 
-ESP_EVENT_DECLARE_BASE(GUI_EVENTS);
+extern lv_obj_t *hour_hand;
+extern lv_obj_t *minute_hand;
+extern lv_obj_t *second_hand;
+extern lv_obj_t *clock;
 
-enum { GUI_BUTTON_EVENT };
-
-typedef union {
-    struct {
-        uint8_t id;
-        uint8_t action;
-    } button;
-
-} gui_event_t;
-
-esp_err_t guiInit();
+void createGui();
 
 #endif

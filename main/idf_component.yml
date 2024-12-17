@@ -1,5 +1,6 @@
 dependencies:
-  lvgl/lvgl: ^8.4.0
   idf:
-    version: '>=4.1.0'
-  espressif/esp_lcd_ili9341: ==1.0.0
+    version: '>=5.0.0'
+    public: true
+  qrcode: ^0.1.0
+  espressif/esp_lvgl_port: ^2.3.0

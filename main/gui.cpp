@@ -5,7 +5,6 @@
 
 #include "esp_event.h"
 #include "esp_log.h"
-#include "lvgl-display.hpp"
 #include "sdkconfig.h"
 
 #define TAG "gui"

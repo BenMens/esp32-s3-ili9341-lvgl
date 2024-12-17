@@ -2,6 +2,7 @@ set(srcs
     "main.cpp"
     "gui.cpp"
     "wifi.cpp"
+    "lvgl-touch-xpt2046.cpp"
 )
 
 idf_component_register(
@@ -14,7 +15,6 @@ idf_component_register(
         esp_adc
         neopixel
         display
-        display-lvgl
         lvgl
         esp_wifi
         nvs_flash

@@ -39,4 +39,32 @@ menu "Project configuration"
             default 10
     endmenu
 
+    menu "xpt2046 touch"
+        config TOUCH_CS_PIN
+            int "TOUCH_CS_PIN"
+            range -1 60
+            default -1
+
+        config TOUCH_IRQ_PIN
+            int "TOUCH_IRQ_PIN"
+            range -1 60
+            default -1
+
+        config TOUCH_RESET_PIN
+            int "TOUCH_RESET_PIN"
+            range -1 60
+            default -1
+
+        choice TOUCH_SPI_HOST
+            prompt "TOUCH_SPI_HOST"
+            default TOUCH_SPI2_HOST
+
+            config TOUCH_SPI2_HOST
+                bool "SPI 2"
+
+            config TOUCH_SPI3_HOST
+                bool "SPI 3"
+        endchoice
+    endmenu
+
 endmenu

@@ -11,7 +11,6 @@
 #include "esp_check.h"
 #include "esp_err.h"
 #include "esp_event.h"
-#include "esp_heap_trace.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "gui.hpp"
@@ -93,8 +92,8 @@ static esp_err_t app_lvgl_init(void)
 {
     /* Initialize LVGL */
     const lvgl_port_cfg_t lvgl_cfg = {
-        .task_priority = 2,                        /* LVGL task priority */
-        .task_stack = 8196, /* LVGL task stack size */
+        .task_priority = 2,  /* LVGL task priority */
+        .task_stack = 8196,  /* LVGL task stack size */
         .task_affinity = -1, /* LVGL task pinned to core (-1 is no affinity) */
         .task_max_sleep_ms = 500, /* Maximum sleep in LVGL task */
         .timer_period_ms = 5,     /* LVGL timer tick period in ms */
@@ -164,8 +163,6 @@ extern "C" void app_main(void)
         0, {.red = 0x00, .green = 0x00, .blue = 0x00, .white = 0x00});
     neoPixels->write();
 
-    start_wifi();
-
     ESP_LOGI(TAG, "setup SPI2_HOST");
     spi_bus_config_t buscfg2 = {
         .mosi_io_num = (gpio_num_t)(CONFIG_PRJ_PIN_SPI2_MOSI),
@@ -180,7 +177,7 @@ extern "C" void app_main(void)
         .max_transfer_sz = 0,
         .flags = 0,
         .isr_cpu_id = (esp_intr_cpu_affinity_t)0,
-        .intr_flags = ESP_INTR_FLAG_IRAM,
+        .intr_flags = ESP_INTR_FLAG_LEVEL1,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg2, SPI_DMA_CH_AUTO));
 
@@ -197,6 +194,8 @@ extern "C" void app_main(void)
 
     display::setupBacklightPin((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT);
     display::setBacklight((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT, 1);
+
+    start_wifi();
 
     while (1) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);

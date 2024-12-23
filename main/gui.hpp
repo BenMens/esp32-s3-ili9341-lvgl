@@ -10,6 +10,7 @@ extern lv_obj_t *hour_hand;
 extern lv_obj_t *minute_hand;
 extern lv_obj_t *second_hand;
 extern lv_obj_t *clock;
+extern lv_obj_t *provisioning_qr;
 
 void createGui();
 

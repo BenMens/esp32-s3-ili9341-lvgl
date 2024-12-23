@@ -16,9 +16,11 @@ static lv_point_precise_t second_hand_points[2];
 static lv_style_t minor_ticks_style;
 static lv_style_t main_line_style;
 static lv_style_t indicator_style;
+
 static const char *hour_ticks[] = {"12", "1", "2", "3",  "4",  "5", "6",
                                    "7",  "8", "9", "10", "11", NULL};
 
+lv_obj_t *provisioning_qr;
 lv_obj_t *hour_hand;
 lv_obj_t *minute_hand;
 lv_obj_t *second_hand;
@@ -114,19 +116,19 @@ lv_obj_t *createTabNetwork(lv_obj_t *tabview)
     lv_color_t bg_color = lv_palette_lighten(LV_PALETTE_LIGHT_BLUE, 5);
     lv_color_t fg_color = lv_palette_darken(LV_PALETTE_BLUE, 4);
 
-    lv_obj_t *qr = lv_qrcode_create(tab);
-    lv_qrcode_set_size(qr, 150);
-    lv_qrcode_set_dark_color(qr, fg_color);
-    lv_qrcode_set_light_color(qr, bg_color);
+    provisioning_qr = lv_qrcode_create(tab);
+    lv_qrcode_set_size(provisioning_qr, 200);
+    lv_qrcode_set_dark_color(provisioning_qr, fg_color);
+    lv_qrcode_set_light_color(provisioning_qr, bg_color);
 
     /*Set data*/
     const char *data = "https://lvgl.io";
-    lv_qrcode_update(qr, data, strlen(data));
-    lv_obj_center(qr);
+    lv_qrcode_update(provisioning_qr, data, strlen(data));
+    lv_obj_center(provisioning_qr);
 
     /*Add a border with bg_color*/
-    lv_obj_set_style_border_color(qr, bg_color, 0);
-    lv_obj_set_style_border_width(qr, 5, 0);
+    lv_obj_set_style_border_color(provisioning_qr, bg_color, 0);
+    lv_obj_set_style_border_width(provisioning_qr, 5, 0);
 
     return tab;
 }

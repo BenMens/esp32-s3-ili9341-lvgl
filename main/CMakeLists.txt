@@ -1,8 +1,8 @@
 set(srcs
-    "main.cpp"
-    "gui.cpp"
-    "wifi.cpp"
-    "lvgl-touch-xpt2046.cpp"
+    main.cpp
+    gui.cpp
+    wifi.cpp
+    lvgl-touch-xpt2046.cpp
 )
 
 idf_component_register(

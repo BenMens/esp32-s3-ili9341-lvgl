@@ -13,7 +13,8 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
-#include "gui.hpp"
+#include "gui/home-controller.hpp"
+#include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
@@ -23,14 +24,13 @@
 
 #define NUM_LEDS 1
 
+DisplayNavigationContoller displayNavigationContoller;
+HomeViewController homeViewController(NULL);
+
 void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps,
                                  const char* function_name);
 
 static Pixels* neoPixels = NULL;
-
-static int32_t hour;
-static int32_t minute;
-static int32_t second;
 
 /* LCD IO and panel */
 static esp_lcd_panel_io_handle_t lcd_io = NULL;
@@ -42,48 +42,18 @@ static lv_display_t* lvgl_disp = NULL;
 #define EXAMPLE_LCD_DRAW_BUFF_HEIGHT 240
 #define EXAMPLE_LCD_DRAW_BUFF_DOUBLE true
 
-static void timer_cb(lv_timer_t* timer)
-{
-    LV_UNUSED(timer);
-
-    second++;
-    if (second > 59) {
-        second = 0;
-
-        minute++;
-        if (minute > 59) {
-            minute = 0;
-
-            hour++;
-            if (hour > 11) {
-                hour = 0;
-            }
-        }
-    }
-
-    if (lvgl_port_lock(0)) {
-        lv_scale_set_line_needle_value(clock, second_hand, 60, second);
-        lv_scale_set_line_needle_value(clock, minute_hand, 60, minute);
-        lv_scale_set_line_needle_value(clock, hour_hand, 40,
-                                       hour * 5 + (minute / 12));
-        lvgl_port_unlock();
-    }
-}
-
-void createGui1Contoller()
+void startGuiContoller()
 {
     lvgl_port_lock(0);
 
-    hour = 11;
-    minute = 5;
-    second = 0;
-
-    createGui();
-
-    lv_timer_t* timer = lv_timer_create(timer_cb, 1000, NULL);
-    lv_timer_ready(timer);
-
     initializeScreenTouchXpt2046();
+
+    lv_theme_default_init(NULL, lv_palette_main(LV_PALETTE_BLUE),
+                          lv_palette_main(LV_PALETTE_RED), true,
+                          &lv_font_montserrat_12);
+
+    displayNavigationContoller.setDisplay(lv_display_get_default());
+    displayNavigationContoller.pushViewController(homeViewController);
 
     lvgl_port_unlock();
 }
@@ -190,7 +160,7 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(app_lvgl_init());
 
-    createGui1Contoller();
+    startGuiContoller();
 
     display::setupBacklightPin((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT);
     display::setBacklight((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT, 1);

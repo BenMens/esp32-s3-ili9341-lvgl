@@ -1,6 +1,3 @@
-#ifndef __LVGL_TOUCH_XPT2046_HPP
-#define __LVGL_TOUCH_XPT2046_HPP
+#pragma once
 
 void initializeScreenTouchXpt2046();
-
-#endif

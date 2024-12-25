@@ -1,6 +1,3 @@
-#ifndef _WIFI_HPP
-#define _WIFI_HPP
+#pragma once 
 
 void start_wifi(void);
-
-#endif  // _WIFI_HPP

@@ -1,8 +1,16 @@
 set(srcs
     main.cpp
-    gui.cpp
     wifi.cpp
     lvgl-touch-xpt2046.cpp
+    gui/clock-controller.cpp
+    gui/wifi-controller.cpp
+    gui/home-controller.cpp
+    gui/energy-controller.cpp
+    gui/back-button-controller.cpp
+    lvgl-mvc/events.cpp
+    lvgl-mvc/view-controller.cpp
+    lvgl-mvc/navigation.cpp
+    model/wifi-model.cpp
 )
 
 idf_component_register(

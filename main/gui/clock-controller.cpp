@@ -1,37 +1,38 @@
-#include "gui.hpp"
+#include "clock-controller.hpp"
 
-#include <stdio.h>
 #include <string.h>
-
-#include "esp_event.h"
-#include "esp_log.h"
-#include "sdkconfig.h"
-
-#define TAG "gui"
-
-ESP_EVENT_DEFINE_BASE(GUI_EVENTS);
-
-static lv_point_precise_t minute_hand_points[2];
-static lv_point_precise_t second_hand_points[2];
-static lv_style_t minor_ticks_style;
-static lv_style_t main_line_style;
-static lv_style_t indicator_style;
+#include <time.h>
 
 static const char *hour_ticks[] = {"12", "1", "2", "3",  "4",  "5", "6",
                                    "7",  "8", "9", "10", "11", NULL};
 
-lv_obj_t *provisioning_qr;
-lv_obj_t *hour_hand;
-lv_obj_t *minute_hand;
-lv_obj_t *second_hand;
-lv_obj_t *clock;
-
-lv_obj_t *createTabClock(lv_obj_t *tabview)
+ClockViewController::ClockViewController(ViewController *parentViewController)
+    : ViewController(parentViewController), backButtonViewController(this)
 {
-    lv_obj_t *tab = lv_tabview_add_tab(tabview, "Clock");
+    timer = lv_timer_create(
+        [](lv_timer_t *timer) {
+            ClockViewController *controller =
+                (ClockViewController *)lv_timer_get_user_data(timer);
+            controller->update();
+        },
+        1000, this);
+}
 
-    clock = lv_scale_create(tab);
+ClockViewController::~ClockViewController()
+{
+    lv_timer_delete(timer);
+}
 
+lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
+{
+    static lv_style_t minor_ticks_style;
+    static lv_style_t main_line_style;
+    static lv_style_t indicator_style;
+
+    lv_obj_t *view = lv_obj_create(parent);
+    lv_obj_set_size(view, lv_pct(100), lv_pct(100));
+
+    clock = lv_scale_create(view);
     lv_obj_set_size(clock, 170, 170);
 
     lv_scale_set_mode(clock, LV_SCALE_MODE_ROUND_INNER);
@@ -96,56 +97,22 @@ lv_obj_t *createTabClock(lv_obj_t *tabview)
     lv_obj_set_style_line_rounded(hour_hand, true, 0);
     lv_obj_set_style_line_color(hour_hand, lv_color_black(), 0);
 
-    return tab;
+    lv_obj_t *backButton = backButtonViewController.attachViewToParent(view);
+
+    return view;
 }
 
-lv_obj_t *createTabLights(lv_obj_t *tabview)
+void ClockViewController::update()
 {
-    lv_obj_t *tab = lv_tabview_add_tab(tabview, "Lights");
+    if (!viewValid()) return;
 
-    lv_obj_t *label = lv_label_create(tab);
-    lv_label_set_text(label, "Lights");
+    time_t now;
+    time(&now);
 
-    return tab;
-}
+    struct tm *t = localtime(&now);
 
-lv_obj_t *createTabNetwork(lv_obj_t *tabview)
-{
-    lv_obj_t *tab = lv_tabview_add_tab(tabview, "Network");
-
-    lv_color_t bg_color = lv_palette_lighten(LV_PALETTE_LIGHT_BLUE, 5);
-    lv_color_t fg_color = lv_palette_darken(LV_PALETTE_BLUE, 4);
-
-    provisioning_qr = lv_qrcode_create(tab);
-    lv_qrcode_set_size(provisioning_qr, 200);
-    lv_qrcode_set_dark_color(provisioning_qr, fg_color);
-    lv_qrcode_set_light_color(provisioning_qr, bg_color);
-
-    /*Set data*/
-    const char *data = "https://lvgl.io";
-    lv_qrcode_update(provisioning_qr, data, strlen(data));
-    lv_obj_center(provisioning_qr);
-
-    /*Add a border with bg_color*/
-    lv_obj_set_style_border_color(provisioning_qr, bg_color, 0);
-    lv_obj_set_style_border_width(provisioning_qr, 5, 0);
-
-    return tab;
-}
-
-void createGui()
-{
-    lv_theme_t *theme = lv_theme_default_init(
-        NULL, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
-        true, &lv_font_montserrat_12);
-
-    lv_display_set_theme(NULL, theme);
-
-    lv_obj_t *tabview = lv_tabview_create(lv_screen_active());
-    lv_tabview_set_tab_bar_position(tabview, LV_DIR_LEFT);
-    lv_tabview_set_tab_bar_size(tabview, 80);
-
-    createTabClock(tabview);
-    createTabLights(tabview);
-    createTabNetwork(tabview);
+    lv_scale_set_line_needle_value(clock, second_hand, 60, t->tm_sec);
+    lv_scale_set_line_needle_value(clock, minute_hand, 60, t->tm_min);
+    lv_scale_set_line_needle_value(clock, hour_hand, 40,
+                                   t->tm_hour % 12 * 5 + (t->tm_min / 12));
 }

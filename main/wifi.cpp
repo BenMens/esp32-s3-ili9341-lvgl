@@ -12,8 +12,11 @@
 #include <wifi_provisioning/manager.h>
 #include <wifi_provisioning/scheme_softap.h>
 
-#include <gui.hpp>
 #include <wifi.hpp>
+
+#include "model/wifi-model.hpp"
+
+WifiModel wifiModel;
 
 static const char *TAG = "app";
 
@@ -95,6 +98,16 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR,
                  IP2STR(&event->ip_info.ip));
+
+        char ifAddressString[16];
+        sprintf(ifAddressString, IPSTR, IP2STR(&event->ip_info.ip));
+        wifiModel.setIpAddress(ifAddressString);
+
+        wifi_ap_record_t ap_info;
+        esp_wifi_sta_get_ap_info(&ap_info);
+
+        wifiModel.setSsid((const char *)ap_info.ssid);
+
         /* Signal main application to continue execution */
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
     } else if (event_base == PROTOCOMM_SECURITY_SESSION_EVENT) {
@@ -166,9 +179,9 @@ void provision_wifi()
              PROV_QR_VERSION, service_name, username, pop,
              PROV_TRANSPORT_SOFTAP);
 
-    lvgl_port_lock(-1);
-    lv_qrcode_update(provisioning_qr, payload, strlen(payload));
-    lvgl_port_unlock();
+    // lvgl_port_lock(-1);
+    // lv_qrcode_update(provisioning_qr, payload, strlen(payload));
+    // lvgl_port_unlock();
 }
 
 void start_wifi(void)
@@ -218,8 +231,8 @@ void start_wifi(void)
         ESP_ERROR_CHECK(esp_wifi_start());
     }
 
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    // vTaskDelay(5000 / portTICK_PERIOD_MS);
 
-    provision_wifi_init();
-    provision_wifi();
+    // provision_wifi_init();
+    // provision_wifi();
 }

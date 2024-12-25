@@ -97,7 +97,8 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_line_rounded(hour_hand, true, 0);
     lv_obj_set_style_line_color(hour_hand, lv_color_black(), 0);
 
-    lv_obj_t *backButton = backButtonViewController.attachViewToParent(view);
+    lv_obj_t *backButton =
+        backButtonViewController.getViewAttachedToParent(view);
 
     return view;
 }
@@ -106,13 +107,17 @@ void ClockViewController::update()
 {
     if (!viewValid()) return;
 
-    time_t now;
-    time(&now);
+    if (lvgl_mvc_lock(0)) {
+        time_t now;
+        time(&now);
 
-    struct tm *t = localtime(&now);
+        struct tm *t = localtime(&now);
 
-    lv_scale_set_line_needle_value(clock, second_hand, 60, t->tm_sec);
-    lv_scale_set_line_needle_value(clock, minute_hand, 60, t->tm_min);
-    lv_scale_set_line_needle_value(clock, hour_hand, 40,
-                                   t->tm_hour % 12 * 5 + (t->tm_min / 12));
+        lv_scale_set_line_needle_value(clock, second_hand, 60, t->tm_sec);
+        lv_scale_set_line_needle_value(clock, minute_hand, 60, t->tm_min);
+        lv_scale_set_line_needle_value(clock, hour_hand, 40,
+                                       t->tm_hour % 12 * 5 + (t->tm_min / 12));
+
+        lvgl_mvc_unlock();
+    }
 }

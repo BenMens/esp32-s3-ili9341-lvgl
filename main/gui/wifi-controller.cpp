@@ -1,6 +1,7 @@
 #include "wifi-controller.hpp"
 
 #include <cstring>
+#include <stdio.h>
 
 WifiViewController::WifiViewController(ViewController *parentViewController,
                                        WifiModel &wifiModel)
@@ -55,7 +56,7 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_pad_all(qrCode, 30, 0);
     lv_qrcode_set_size(qrCode, 150);
 
-    backButtonViewController.attachViewToParent(view);
+    backButtonViewController.getViewAttachedToParent(view);
 
     return view;
 }
@@ -69,10 +70,21 @@ void WifiViewController::update()
 {
     if (!viewValid()) return;
 
-    lv_label_set_text(ipAddresLabel, wifiModel.getIpAddress());
-    lv_label_set_text(ssidLabel, wifiModel.getSsid());
-    lv_label_set_text(statusLabel, "-");
+    if (lvgl_mvc_lock(0)) {
+        lv_label_set_text(ipAddresLabel, wifiModel.getIpAddress());
+        lv_label_set_text(ssidLabel, wifiModel.getSsid());
+        lv_label_set_text(statusLabel, "-");
 
-    const char *data = "https://lvgl.io";
-    lv_qrcode_update(qrCode, data, strlen(data));
+        if (strlen(wifiModel.getIpAddress()) > 1) {
+            char url[32];
+
+            sprintf(url, "http://%s", wifiModel.getIpAddress());
+            lv_qrcode_update(qrCode, url, strlen(url));
+            lv_obj_remove_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
+        }
+
+        lvgl_mvc_unlock();
+    }
 }

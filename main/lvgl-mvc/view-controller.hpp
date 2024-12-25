@@ -2,6 +2,8 @@
 
 #include <lvgl.h>
 
+#include "../lvgl-mvc/lvgl-mvc.hpp"
+
 class NavigationController;
 
 class ViewController
@@ -24,21 +26,29 @@ class ViewController
 
     virtual ~ViewController()
     {
-        if (view && deleteEventDesc) {
-            lv_obj_remove_event_dsc(view, deleteEventDesc);
+        if (lvgl_mvc_lock(0)) {
+            if (view && deleteEventDesc) {
+                lv_obj_remove_event_dsc(view, deleteEventDesc);
+            }
+            deleteEventDesc = nullptr;
+            deleteView();
+
+            lvgl_mvc_unlock();
         }
-        deleteEventDesc = nullptr;
-        deleteView();
     }
 
     virtual void deleteView()
     {
         if (view != nullptr) {
-            if (!willAutoDelete) {
-                lv_obj_delete(view);
+            if (lvgl_mvc_lock(0)) {
+                if (!willAutoDelete) {
+                    lv_obj_delete(view);
+                }
+                view = nullptr;
+                deleteEventDesc = NULL;
+
+                lvgl_mvc_unlock();
             }
-            view = nullptr;
-            deleteEventDesc = NULL;
         }
     }
 
@@ -62,34 +72,40 @@ class ViewController
 
     virtual void onChildPushed(ViewController *childViewController) {}
 
-    virtual lv_obj_t *attachViewToParent(lv_obj_t *parent)
+    virtual lv_obj_t *getViewAttachedToParent(lv_obj_t *parent)
     {
-        if (view == NULL) {
-            view = createView(parent);
+        if (lvgl_mvc_lock(0)) {
+            if (view == NULL) {
+                view = createView(parent);
 
-            deleteEventDesc = lv_obj_add_event_cb(
-                view,
-                [](lv_event_t *e) {
-                    ViewController *viewController =
-                        (ViewController *)lv_event_get_user_data(e);
+                deleteEventDesc = lv_obj_add_event_cb(
+                    view,
+                    [](lv_event_t *e) {
+                        ViewController *viewController =
+                            (ViewController *)lv_event_get_user_data(e);
 
-                    viewController->view = NULL;
-                    viewController->deleteEventDesc = NULL;
-                },
-                LV_EVENT_DELETE, this);
+                        viewController->view = NULL;
+                        viewController->deleteEventDesc = NULL;
+                    },
+                    LV_EVENT_DELETE, this);
 
-            update();
-        } else if (lv_obj_get_parent(view) != parent) {
-            lv_obj_set_parent(view, parent);
+                update();
+            } else if (lv_obj_get_parent(view) != parent) {
+                lv_obj_set_parent(view, parent);
+            }
+
+            lvgl_mvc_unlock();
+
+            return view;
         }
 
-        return view;
+        return NULL;
     }
 
     void setNavigationontroller(NavigationController *navigationController)
     {
         this->navigationController = navigationController;
-    };
+    }
 
     NavigationController *getNavigationontroller()
     {

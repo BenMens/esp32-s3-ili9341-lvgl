@@ -14,6 +14,7 @@
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "gui/home-controller.hpp"
+#include "lvgl-mvc/lvgl-mvc.hpp"
 #include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
 #include "neopixel.hpp"
@@ -23,6 +24,17 @@
 #define TAG "main"
 
 #define NUM_LEDS 1
+
+extern bool lvgl_mvc_lock(uint32_t timeout_ms)
+{
+    return lvgl_port_lock(timeout_ms);
+}
+
+extern void lvgl_mvc_unlock(void)
+{
+
+    lvgl_port_unlock();
+}
 
 DisplayNavigationContoller displayNavigationContoller;
 HomeViewController homeViewController(NULL);

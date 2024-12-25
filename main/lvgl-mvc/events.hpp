@@ -3,6 +3,8 @@
 #include <functional>
 #include <type_traits>
 
+#include "lvgl-mvc.hpp"
+
 #define DEFINE_EVENTS_ENUM(Enum)                                    \
     inline constexpr Enum operator|(Enum Lhs, Enum Rhs)             \
     {                                                               \
@@ -118,17 +120,21 @@ class Events
 
     void send(EventsType event, EventsDataType *eventData)
     {
-        EventHandlerRegistration *handlerRegistration =
-            this->firstHandlerRegistration;
+        if (lvgl_mvc_lock(0)) {
+            EventHandlerRegistration *handlerRegistration =
+                this->firstHandlerRegistration;
 
-        while (handlerRegistration != nullptr) {
-            if (static_cast<std::underlying_type_t<EventsType>>(
-                    handlerRegistration->interrestMask & event) > 0) {
-                handlerRegistration->handler(source, event, eventData,
-                                             handlerRegistration->userData);
+            while (handlerRegistration != nullptr) {
+                if (static_cast<std::underlying_type_t<EventsType>>(
+                        handlerRegistration->interrestMask & event) > 0) {
+                    handlerRegistration->handler(source, event, eventData,
+                                                 handlerRegistration->userData);
 
-                handlerRegistration = handlerRegistration->nextHandler;
+                    handlerRegistration = handlerRegistration->nextHandler;
+                }
             }
+
+            lvgl_mvc_unlock();
         }
     }
 };

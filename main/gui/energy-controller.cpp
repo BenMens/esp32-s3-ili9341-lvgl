@@ -112,7 +112,7 @@ lv_obj_t *EnergyViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_border_width(label, 1, 0);
     lv_obj_add_style(label, &style1, 0);
 
-    backButtonViewController.attachViewToParent(view);
+    backButtonViewController.getViewAttachedToParent(view);
 
     return view;
 }

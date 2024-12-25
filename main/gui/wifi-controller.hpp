@@ -22,7 +22,5 @@ class WifiViewController : public ViewController
     WifiViewController(ViewController *parentViewController, WifiModel &model);
     ~WifiViewController();
 
-    void setIpAddress(char *newIpAddrrss);
-
     void update();
 };

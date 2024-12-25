@@ -2,9 +2,11 @@
 
 #include "view-controller.hpp"
 
-class NavigationController
+class NavigationController : public ViewController
 {
    public:
+    NavigationController() : ViewController(NULL) {}
+
     virtual void pushViewController(ViewController &viewController) = 0;
 
     // virtual void replaceTopViewController(ViewController &viewController) =
@@ -48,12 +50,12 @@ class DisplayNavigationContoller : public NavigationController
 
         if (navAction == NavigationAction::PUSHED) {
             lv_screen_load_anim(
-                newEntry.viewController.attachViewToParent(NULL),
+                newEntry.viewController.getViewAttachedToParent(NULL),
                 LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 100, true);
 
         } else {
             lv_screen_load_anim(
-                newEntry.viewController.attachViewToParent(NULL),
+                newEntry.viewController.getViewAttachedToParent(NULL),
                 LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 100, true);
         }
     }
@@ -98,6 +100,16 @@ class DisplayNavigationContoller : public NavigationController
             }
 
             delete prevTopEntry;
+        }
+    }
+
+    lv_obj_t *createView(lv_obj_t *parent)
+    {
+        if (topEntry != NULL) {
+            return topEntry->viewController.getViewAttachedToParent(parent);
+        } else {
+        return NULL;
+
         }
     }
 };

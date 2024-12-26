@@ -13,12 +13,14 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
+#include "esp_netif_sntp.h"
 #include "gui/home-controller.hpp"
 #include "lvgl-mvc/lvgl-mvc.hpp"
 #include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
+#include "time.h"
 #include "wifi.hpp"
 
 #define TAG "main"
@@ -32,7 +34,6 @@ extern bool lvgl_mvc_lock(uint32_t timeout_ms)
 
 extern void lvgl_mvc_unlock(void)
 {
-
     lvgl_port_unlock();
 }
 
@@ -178,6 +179,12 @@ extern "C" void app_main(void)
     display::setBacklight((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT, 1);
 
     start_wifi();
+
+    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+    tzset();
+
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    esp_netif_sntp_init(&config);
 
     while (1) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);

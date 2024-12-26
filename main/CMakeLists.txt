@@ -6,6 +6,7 @@ set(srcs
     gui/wifi-controller.cpp
     gui/home-controller.cpp
     gui/energy-controller.cpp
+    gui/energy-meter-controller.cpp
     gui/back-button-controller.cpp
     lvgl-mvc/events.cpp
     lvgl-mvc/view-controller.cpp

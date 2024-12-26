@@ -70,7 +70,7 @@ class ViewController
 
     virtual void onChildPopped(ViewController *poppedViewController) {}
 
-    virtual void onChildPushed(ViewController *childViewController) {}
+    virtual void onChildPushed(ViewController *pushedViewController) {}
 
     virtual lv_obj_t *getViewAttachedToParent(lv_obj_t *parent)
     {

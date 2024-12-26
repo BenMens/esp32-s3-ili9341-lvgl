@@ -1,7 +1,8 @@
 #include "wifi-controller.hpp"
 
-#include <cstring>
 #include <stdio.h>
+
+#include <cstring>
 
 WifiViewController::WifiViewController(ViewController *parentViewController,
                                        WifiModel &wifiModel)
@@ -9,12 +10,6 @@ WifiViewController::WifiViewController(ViewController *parentViewController,
       wifiModel(wifiModel),
       backButtonViewController(this)
 {
-    wifiModelRegistration = wifiModel.events.addHandler(
-        WifiModelEvents::ADDRESS_CHANGED | WifiModelEvents::SSID_CHANGED |
-            WifiModelEvents::STATUS_CHANGED,
-        nullptr,
-        [&](WifiModel &source, WifiModelEvents event,
-            WifiModelEventData eventData, void *userData) { this->update(); });
 }
 
 lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
@@ -33,6 +28,7 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
     lv_obj_t *contentView = lv_obj_create(view);
     lv_obj_set_size(contentView, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_add_style(contentView, &style, 0);
+    lv_obj_set_style_align(contentView, LV_ALIGN_BOTTOM_RIGHT, 0);
 
     lv_obj_t *label;
 
@@ -52,7 +48,7 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_margin_left(statusLabel, 20, 0);
 
     qrCode = lv_qrcode_create(view);
-    lv_obj_set_style_align(qrCode, LV_ALIGN_TOP_RIGHT, 0);
+    lv_obj_set_style_align(qrCode, LV_ALIGN_LEFT_MID, 0);
     lv_obj_set_style_pad_all(qrCode, 30, 0);
     lv_qrcode_set_size(qrCode, 150);
 
@@ -61,7 +57,17 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-WifiViewController::~WifiViewController()
+void WifiViewController::onPushed()
+{
+    wifiModelRegistration = wifiModel.events.addHandler(
+        WifiModelEvents::ADDRESS_CHANGED | WifiModelEvents::SSID_CHANGED |
+            WifiModelEvents::STATUS_CHANGED,
+        nullptr,
+        [&](WifiModel &source, WifiModelEvents event,
+            WifiModelEventData eventData, void *userData) { this->update(); });
+}
+
+void WifiViewController::onPopped()
 {
     wifiModel.events.removeHandler(wifiModelRegistration);
 }
@@ -78,7 +84,7 @@ void WifiViewController::update()
         if (strlen(wifiModel.getIpAddress()) > 1) {
             char url[32];
 
-            sprintf(url, "http://%s", wifiModel.getIpAddress());
+            snprintf(url, sizeof(url), "http://%s", wifiModel.getIpAddress());
             lv_qrcode_update(qrCode, url, strlen(url));
             lv_obj_remove_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
         } else {

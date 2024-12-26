@@ -2,6 +2,14 @@
 
 #include "view-controller.hpp"
 
+enum class NavigationAction {
+    PUSH,
+    POP,
+    CAROUSEL_LEFT,
+    CAROUSEL_RIGHT,
+};
+
+
 class NavigationController : public ViewController
 {
    public:
@@ -13,6 +21,18 @@ class NavigationController : public ViewController
     // 0;
 
     virtual void popViewController() = 0;
+
+    void triggerNavigation(NavigationAction action)
+    {
+        switch (action) {
+            case NavigationAction::POP:
+                popViewController();
+                break;
+            default:
+                // Invalid action
+                break;
+        }
+    }
 };
 
 class DisplayViewControllerEntry
@@ -26,11 +46,6 @@ class DisplayViewControllerEntry
         : viewController(viewController), previousEntry(previousEntry)
     {
     }
-};
-
-enum class NavigationAction {
-    PUSHED,
-    POPPED,
 };
 
 class DisplayNavigationContoller : public NavigationController
@@ -48,15 +63,14 @@ class DisplayNavigationContoller : public NavigationController
             prevEntry->viewController.setWillAutoDelete();
         }
 
-        if (navAction == NavigationAction::PUSHED) {
+        if (navAction == NavigationAction::PUSH) {
             lv_screen_load_anim(
                 newEntry.viewController.getViewAttachedToParent(NULL),
-                LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 100, true);
-
+                LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, true);
         } else {
             lv_screen_load_anim(
                 newEntry.viewController.getViewAttachedToParent(NULL),
-                LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 100, true);
+                LV_SCR_LOAD_ANIM_FADE_OUT, 200, 0, true);
         }
     }
 
@@ -78,7 +92,7 @@ class DisplayNavigationContoller : public NavigationController
         }
 
         lv_disp_set_default(display);
-        loadScreen(*topEntry, prevEntry, NavigationAction::PUSHED);
+        loadScreen(*topEntry, prevEntry, NavigationAction::PUSH);
     }
 
     void popViewController()
@@ -92,7 +106,7 @@ class DisplayNavigationContoller : public NavigationController
 
             lv_disp_set_default(display);
             if (topEntry != nullptr) {
-                loadScreen(*topEntry, prevTopEntry, NavigationAction::POPPED);
+                loadScreen(*topEntry, prevTopEntry, NavigationAction::POP);
                 topEntry->viewController.onChildPopped(
                     &prevTopEntry->viewController);
             } else {
@@ -108,8 +122,7 @@ class DisplayNavigationContoller : public NavigationController
         if (topEntry != NULL) {
             return topEntry->viewController.getViewAttachedToParent(parent);
         } else {
-        return NULL;
-
+            return NULL;
         }
     }
 };

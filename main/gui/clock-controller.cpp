@@ -9,18 +9,6 @@ static const char *hour_ticks[] = {"12", "1", "2", "3",  "4",  "5", "6",
 ClockViewController::ClockViewController(ViewController *parentViewController)
     : ViewController(parentViewController), backButtonViewController(this)
 {
-    timer = lv_timer_create(
-        [](lv_timer_t *timer) {
-            ClockViewController *controller =
-                (ClockViewController *)lv_timer_get_user_data(timer);
-            controller->update();
-        },
-        1000, this);
-}
-
-ClockViewController::~ClockViewController()
-{
-    lv_timer_delete(timer);
 }
 
 lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
@@ -97,10 +85,25 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_line_rounded(hour_hand, true, 0);
     lv_obj_set_style_line_color(hour_hand, lv_color_black(), 0);
 
-    lv_obj_t *backButton =
-        backButtonViewController.getViewAttachedToParent(view);
+    backButtonViewController.getViewAttachedToParent(view);
 
     return view;
+}
+
+void ClockViewController::onPushed()
+{
+    timer = lv_timer_create(
+        [](lv_timer_t *timer) {
+            ClockViewController *controller =
+                (ClockViewController *)lv_timer_get_user_data(timer);
+            controller->update();
+        },
+        1000, this);
+}
+
+void ClockViewController::onPopped()
+{
+    lv_timer_delete(timer);
 }
 
 void ClockViewController::update()

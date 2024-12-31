@@ -25,6 +25,7 @@
     "string_view": "cpp",
     "span": "cpp",
     "chrono": "cpp",
-    "typeinfo": "cpp"
+    "typeinfo": "cpp",
+    "format": "cpp"
   }
 }

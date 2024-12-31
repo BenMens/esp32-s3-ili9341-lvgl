@@ -1,6 +1,8 @@
 set(srcs
     main.cpp
     wifi.cpp
+    http-server.cpp
+    spiffs.cpp
     lvgl-touch-xpt2046.cpp
     gui/clock-controller.cpp
     gui/wifi-controller.cpp
@@ -29,4 +31,9 @@ idf_component_register(
         nvs_flash
         wifi_provisioning
         lwip
+        esp_http_server
+        spiffs
+        mqtt
 )
+
+spiffs_create_partition_image(spiffs ../spiffs_source FLASH_IN_PROJECT)

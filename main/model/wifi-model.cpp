@@ -4,8 +4,8 @@
 
 WifiModel::WifiModel() : events(*this)
 {
-    strncpy(ipAddress, "-", sizeof(ipAddress));
-    strncpy(ssid, "-", sizeof(ssid));
+    strlcpy(ipAddress, "-", sizeof(ipAddress));
+    strlcpy(ssid, "-", sizeof(ssid));
     status = WifiStatus::INACTIVE;
 }
 
@@ -13,8 +13,7 @@ WifiModel::~WifiModel() {}
 
 void WifiModel::setIpAddress(const char *newIpAddress)
 {
-    strncpy(ipAddress, newIpAddress, sizeof(ipAddress));
-    ipAddress[sizeof(ipAddress) - 1] = 0;
+    strlcpy(ipAddress, newIpAddress, sizeof(ipAddress));
     events.send(WifiModelEvents::ADDRESS_CHANGED, NULL);
 }
 
@@ -25,8 +24,7 @@ const char *WifiModel::getIpAddress()
 
 void WifiModel::setSsid(const char *newSsid)
 {
-    strncpy(ssid, newSsid, sizeof(ssid));
-    ssid[sizeof(ssid) - 1] = 0;
+    strlcpy(ssid, newSsid, sizeof(ssid));
     events.send(WifiModelEvents::SSID_CHANGED, NULL);
 }
 

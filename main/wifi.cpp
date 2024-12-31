@@ -186,9 +186,6 @@ void provision_wifi()
 
 void start_wifi(void)
 {
-    /* Initialize TCP/IP */
-    ESP_ERROR_CHECK(esp_netif_init());
-
     /* Initialize the event loop */
     wifi_event_group = xEventGroupCreate();
 

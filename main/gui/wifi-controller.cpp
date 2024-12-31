@@ -84,7 +84,7 @@ void WifiViewController::update()
         if (strlen(wifiModel.getIpAddress()) > 1) {
             char url[32];
 
-            snprintf(url, sizeof(url), "http://%s", wifiModel.getIpAddress());
+            snprintf(url, sizeof(url), "http://%s/index.html", wifiModel.getIpAddress());
             lv_qrcode_update(qrCode, url, strlen(url));
             lv_obj_remove_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
         } else {

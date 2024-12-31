@@ -13,13 +13,18 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
+#include "esp_netif.h"
 #include "esp_netif_sntp.h"
 #include "gui/home-controller.hpp"
+#include "http-server.hpp"
 #include "lvgl-mvc/lvgl-mvc.hpp"
 #include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
+#include "model/energy-model.hpp"
+#include "mqtt_client.h"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
+#include "spiffs.hpp"
 #include "time.h"
 #include "wifi.hpp"
 
@@ -39,6 +44,7 @@ extern void lvgl_mvc_unlock(void)
 
 DisplayNavigationContoller displayNavigationContoller;
 HomeViewController homeViewController(NULL);
+EnergyModel energyModel;
 
 void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps,
                                  const char* function_name);
@@ -50,10 +56,124 @@ static esp_lcd_panel_io_handle_t lcd_io = NULL;
 static esp_lcd_panel_handle_t lcd_panel = NULL;
 static lv_display_t* lvgl_disp = NULL;
 
-#define EXAMPLE_LCD_H_RES 320
-#define EXAMPLE_LCD_V_RES 240
-#define EXAMPLE_LCD_DRAW_BUFF_HEIGHT 240
-#define EXAMPLE_LCD_DRAW_BUFF_DOUBLE true
+#define LCD_H_RES 320
+#define LCD_V_RES 240
+#define LCD_DRAW_BUFF_HEIGHT 240
+#define LCD_DRAW_BUFF_DOUBLE true
+#define CONFIG_BROKER_URL "mqtt://192.168.1.123:1883"
+
+static void log_error_if_nonzero(const char* message, int error_code)
+{
+    if (error_code != 0) {
+        ESP_LOGE(TAG, "Last error %s: 0x%x", message, error_code);
+    }
+}
+
+static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
+                               int32_t event_id, void* event_data)
+{
+    ESP_LOGD(TAG,
+             "Event dispatched from event loop base=%s, event_id=%" PRIi32 "",
+             base, event_id);
+    esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
+    esp_mqtt_client_handle_t client = event->client;
+    int msg_id;
+    switch ((esp_mqtt_event_id_t)event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+            // msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3",
+            // 0,
+            //                                  1, 0);
+            // ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(
+                client, "p1/actuals/electricity/delivered", 0);
+            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(
+                client, "p1/actuals/electricity/returned", 1);
+            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+            // msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
+            // ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            break;
+
+        case MQTT_EVENT_SUBSCRIBED:
+            ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+            // msg_id =
+            //     esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0,
+            //     0);
+            // ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+            break;
+        case MQTT_EVENT_UNSUBSCRIBED:
+            // ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d",
+            // event->msg_id);
+            break;
+        case MQTT_EVENT_PUBLISHED:
+            // ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            break;
+        case MQTT_EVENT_DATA:
+            // ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+            // printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+            // printf("DATA=%.*s\r\n", event->data_len, event->data);
+
+            if (strncmp(event->topic, "p1/actuals/electricity/delivered",
+                        event->topic_len) == 0) {
+                char valBuf[20];
+                snprintf(valBuf, sizeof(valBuf), "%.*s", event->data_len,
+                         event->data);
+                float value = atof(valBuf);
+
+                energyModel.setPowerDelivered(value);
+            } else if (strncmp(event->topic, "p1/actuals/electricity/returned",
+                               event->topic_len) == 0) {
+                char valBuf[20];
+                snprintf(valBuf, sizeof(valBuf), "%.*s", event->data_len,
+                         event->data);
+                float value = atof(valBuf);
+
+                energyModel.setPowerReturned(value);
+            }
+            break;
+        case MQTT_EVENT_ERROR:
+            ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+            if (event->error_handle->error_type ==
+                MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+                log_error_if_nonzero("reported from esp-tls",
+                                     event->error_handle->esp_tls_last_esp_err);
+                log_error_if_nonzero("reported from tls stack",
+                                     event->error_handle->esp_tls_stack_err);
+                log_error_if_nonzero(
+                    "captured as transport's socket errno",
+                    event->error_handle->esp_transport_sock_errno);
+                ESP_LOGI(
+                    TAG, "Last errno string (%s)",
+                    strerror(event->error_handle->esp_transport_sock_errno));
+            }
+            break;
+        default:
+            ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+            break;
+    }
+}
+
+static void mqtt_app_start(void)
+{
+    esp_mqtt_client_config_t mqtt_cfg;
+    memset(&mqtt_cfg, 0, sizeof(mqtt_cfg));
+    mqtt_cfg.broker.address.uri = CONFIG_BROKER_URL;
+
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    /* The last argument may be used to pass data to the event handler, in this
+     * example mqtt_event_handler */
+    esp_mqtt_client_register_event(client,
+                                   (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID,
+                                   mqtt_event_handler, NULL);
+    esp_mqtt_client_start(client);
+}
 
 void startGuiContoller()
 {
@@ -90,11 +210,11 @@ static esp_err_t app_lvgl_init(void)
         .io_handle = lcd_io,
         .panel_handle = lcd_panel,
         .control_handle = NULL,
-        .buffer_size = EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES,
-        .double_buffer = EXAMPLE_LCD_DRAW_BUFF_DOUBLE,
+        .buffer_size = LCD_H_RES * LCD_V_RES,
+        .double_buffer = LCD_DRAW_BUFF_DOUBLE,
         .trans_size = 0,
-        .hres = EXAMPLE_LCD_H_RES,
-        .vres = EXAMPLE_LCD_V_RES,
+        .hres = LCD_H_RES,
+        .vres = LCD_V_RES,
         .monochrome = false,
         .rotation =
             {
@@ -134,10 +254,11 @@ extern "C" void app_main(void)
         /* Retry nvs_flash_init */
         ESP_ERROR_CHECK(nvs_flash_init());
     }
-
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_netif_init());
 
     ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_IRAM));
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     neoPixels = new Pixels(GPIO_NUM_48, NUM_LEDS, Pixels::StripType::SK68XXMINI,
                            Pixels::ColorOrder::GRB, 2.8);
@@ -182,9 +303,16 @@ extern "C" void app_main(void)
 
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
-
     esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
     esp_netif_sntp_init(&config);
+
+    ESP_ERROR_CHECK(startSpiffs("/spiffs"));
+
+    httpd_handle_t httpdHandle;
+
+    ESP_ERROR_CHECK(startWebserver(&httpdHandle, "/spiffs"));
+
+    mqtt_app_start();
 
     while (1) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);

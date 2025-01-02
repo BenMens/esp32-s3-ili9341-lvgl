@@ -10,10 +10,13 @@ extern EnergyModel energyModel;
 class EnergyViewController : public ViewController
 {
    private:
+    EventSubscription energyModelRegistration;
     BackButtonViewController backButtonViewController;
     EnergyMeterViewController meter1;
     EnergyMeterViewController meter2;
-    EventSubscription energyModelRegistration;
+    lv_obj_t *electricityDeliveredWidget;
+    lv_obj_t *electricityReturnedWidget;
+    lv_obj_t *gasDeliveredWidget;
 
    protected:
     lv_obj_t *createView(lv_obj_t *parent);

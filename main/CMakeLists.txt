@@ -3,6 +3,7 @@ set(srcs
     wifi.cpp
     http-server.cpp
     spiffs.cpp
+    mqtt-client.cpp
     lvgl-touch-xpt2046.cpp
     gui/clock-controller.cpp
     gui/wifi-controller.cpp

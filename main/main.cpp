@@ -21,6 +21,7 @@
 #include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
 #include "model/energy-model.hpp"
+#include "model/weather-model.hpp"
 #include "mqtt-client.hpp"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
@@ -45,6 +46,7 @@ extern void lvgl_mvc_unlock(void)
 DisplayNavigationContoller displayNavigationContoller;
 HomeViewController homeViewController(NULL);
 EnergyModel energyModel;
+WeatherModel weatherModel;
 
 void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps,
                                  const char* function_name);

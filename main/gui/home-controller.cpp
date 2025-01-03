@@ -4,6 +4,7 @@
 #include "../model/wifi-model.hpp"
 #include "clock-controller.hpp"
 #include "energy-controller.hpp"
+#include "weather-controller.hpp"
 #include "wifi-controller.hpp"
 
 extern WifiModel wifiModel;
@@ -15,91 +16,61 @@ HomeViewController::HomeViewController(ViewController *parentViewController)
 
 lv_obj_t *HomeViewController::createView(lv_obj_t *parent)
 {
-    static lv_style_t style;
-    lv_style_init(&style);
-    lv_style_set_flex_flow(&style, LV_FLEX_FLOW_ROW_WRAP);
-    lv_style_set_flex_main_place(&style, LV_FLEX_ALIGN_SPACE_EVENLY);
-    lv_style_set_layout(&style, LV_LAYOUT_FLEX);
+    static const char *btnm_map[] = {"WiFi",   "Clock",   "\n",
+                                     "Energy", "Weather", NULL};
 
-    lv_obj_t *view = lv_obj_create(parent);
-    lv_obj_set_size(view, lv_pct(100), lv_pct(100));
-    lv_obj_add_style(view, &style, 0);
+    lv_obj_t *btnMatrix = lv_buttonmatrix_create(parent);
+    lv_obj_set_size(btnMatrix, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_pad_all(btnMatrix, 8, LV_PART_MAIN);
+    lv_btnmatrix_set_map(btnMatrix, btnm_map);
+    lv_obj_set_style_bg_color(btnMatrix, lv_theme_get_color_primary(btnMatrix),
+                              LV_PART_ITEMS);
 
-    lv_obj_t *button;
-    lv_obj_t *label;
-
-    // Wifi button
-
-    button = lv_button_create(view);
-    lv_obj_set_height(button, lv_pct(25));
-    lv_obj_set_flex_grow(button, 1);
-    label = lv_label_create(button);
-    lv_label_set_text(label, "WiFi");
-    lv_obj_set_align(label, LV_ALIGN_CENTER);
+    lv_obj_set_style_bg_opa(btnMatrix, LV_OPA_COVER, LV_PART_ITEMS);
+    lv_obj_set_style_radius(btnMatrix, 5, LV_PART_ITEMS);
 
     lv_obj_add_event_cb(
-        button,
+        btnMatrix,
         [](lv_event_t *e) {
             HomeViewController *controller =
                 (HomeViewController *)lv_event_get_user_data(e);
+            lv_event_code_t code = lv_event_get_code(e);
+            if (code == LV_EVENT_VALUE_CHANGED) {
+                lv_obj_t *obj = (lv_obj_t *)lv_event_get_target(e);
+                uint32_t id = lv_buttonmatrix_get_selected_button(obj);
+                // const char *txt = lv_buttonmatrix_get_button_text(obj, id);
 
-            WifiViewController *wifiViewController =
-                new WifiViewController(NULL, wifiModel);
+                switch (id) {
+                    case 0: {
+                        controller->getNavigationontroller()
+                            ->pushViewController(
+                                *new WifiViewController(NULL, wifiModel));
+                    } break;
+                    case 1: {
+                        controller->getNavigationontroller()
+                            ->pushViewController(
+                                *new ClockViewController(NULL));
 
-            controller->getNavigationontroller()->pushViewController(
-                *wifiViewController);
+                    } break;
+                    case 2: {
+                        controller->getNavigationontroller()
+                            ->pushViewController(
+                                *new EnergyViewController(NULL));
+
+                    } break;
+                    case 3: {
+                        controller->getNavigationontroller()
+                            ->pushViewController(
+                                *new WeatherViewController(NULL));
+                    }
+
+                    break;
+                }
+            }
         },
-        LV_EVENT_CLICKED, this);
+        LV_EVENT_ALL, this);
 
-    // Clock button
-
-    button = lv_button_create(view);
-    lv_obj_set_height(button, lv_pct(25));
-    lv_obj_set_flex_grow(button, 1);
-
-    label = lv_label_create(button);
-    lv_label_set_text(label, "Clock");
-    lv_obj_set_align(label, LV_ALIGN_CENTER);
-
-    lv_obj_add_event_cb(
-        button,
-        [](lv_event_t *e) {
-            HomeViewController *controller =
-                (HomeViewController *)lv_event_get_user_data(e);
-
-            ClockViewController *clockViewController =
-                new ClockViewController(NULL);
-
-            controller->getNavigationontroller()->pushViewController(
-                *clockViewController);
-        },
-        LV_EVENT_CLICKED, this);
-
-    // Energy button
-
-    button = lv_button_create(view);
-    lv_obj_set_height(button, lv_pct(25));
-    lv_obj_set_flex_grow(button, 1);
-
-    label = lv_label_create(button);
-    lv_label_set_text(label, "Energy");
-    lv_obj_set_align(label, LV_ALIGN_CENTER);
-
-    lv_obj_add_event_cb(
-        button,
-        [](lv_event_t *e) {
-            EnergyViewController *controller =
-                (EnergyViewController *)lv_event_get_user_data(e);
-
-            EnergyViewController *energyViewController =
-                new EnergyViewController(NULL);
-
-            controller->getNavigationontroller()->pushViewController(
-                *energyViewController);
-        },
-        LV_EVENT_CLICKED, this);
-
-    return view;
+    return btnMatrix;
 }
 
 void HomeViewController::onChildPopped(ViewController *poppedViewController)

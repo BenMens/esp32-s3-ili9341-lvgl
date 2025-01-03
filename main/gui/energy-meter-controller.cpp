@@ -17,7 +17,7 @@ lv_obj_t *EnergyMeterViewController::createView(lv_obj_t *parent)
 
     lv_obj_t *meter = lv_obj_create(parent);
     lv_obj_set_size(meter, meterPanelSize, meterPanelSize);
-    lv_obj_set_style_bg_opa(meter, 0, 0);
+    lv_obj_set_style_bg_opa(meter, LV_OPA_0, 0);
     lv_obj_set_style_border_width(meter, 0, 0);
     lv_obj_set_style_clip_corner(meter, false, 0);
     lv_obj_add_flag(meter, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
@@ -101,9 +101,15 @@ void EnergyMeterViewController::update()
 
 void EnergyMeterViewController::setValue(float value)
 {
-    char valueBuf[10];
-    snprintf(valueBuf, sizeof(valueBuf), "%2.2f", value);
+    if (!viewValid()) return;
 
-    lv_label_set_text(valueLabel, valueBuf);
-    lv_arc_set_value(valueScale, value);
+    if (lvgl_mvc_lock(0)) {
+        char valueBuf[10];
+        snprintf(valueBuf, sizeof(valueBuf), "%2.2f", value);
+
+        lv_label_set_text(valueLabel, valueBuf);
+        lv_arc_set_value(valueScale, value);
+
+        lvgl_mvc_unlock();
+    }
 }

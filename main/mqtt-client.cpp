@@ -30,9 +30,21 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+            msg_id = esp_mqtt_client_subscribe(client,
+                                               "p1/actuals/electricity/delivered", 0);
+            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
 
             msg_id = esp_mqtt_client_subscribe(client,
-                                               "p1/actuals/electricity/+", 0);
+                                               "p1/actuals/electricity/returned", 0);
+            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(client,
+                                               "p1/actuals/electricity/deliveredToday", 0);
+            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(client,
+                                               "p1/actuals/electricity/returnedToday", 0);
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
             msg_id = esp_mqtt_client_subscribe(client, "p1/actuals/gas/+", 0);

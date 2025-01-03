@@ -11,6 +11,8 @@ set(srcs
     gui/energy-controller.cpp
     gui/energy-meter-controller.cpp
     gui/back-button-controller.cpp
+    gui/weather-hour-controller.cpp
+    gui/weather-controller.cpp
     lvgl-mvc/events.cpp
     lvgl-mvc/view-controller.cpp
     lvgl-mvc/navigation.cpp

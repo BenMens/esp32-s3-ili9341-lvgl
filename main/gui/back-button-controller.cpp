@@ -14,7 +14,7 @@ lv_obj_t *BackButtonViewController::createView(lv_obj_t *parent)
     lv_obj_t *buttonLabel = lv_label_create(button);
     lv_label_set_text(buttonLabel, LV_SYMBOL_CLOSE);
     lv_obj_set_style_align(buttonLabel, LV_ALIGN_CENTER, 0);
-    lv_obj_set_style_bg_opa(button, 0, 0);
+    lv_obj_set_style_bg_opa(button, LV_OPA_0, 0);
     lv_obj_set_style_border_color(button, lv_color_make(0x40, 0x40, 0x40), 0);
     lv_obj_set_style_border_width(button, 1, 0);
     lv_obj_set_size(button, 60, 60);

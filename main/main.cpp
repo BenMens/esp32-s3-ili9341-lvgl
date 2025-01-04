@@ -21,12 +21,12 @@
 #include "lvgl-mvc/navigation.hpp"
 #include "lvgl.h"
 #include "model/energy-model.hpp"
-#include "model/weather-model.hpp"
 #include "mqtt-client.hpp"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
 #include "spiffs.hpp"
 #include "time.h"
+#include "weather-client.hpp"
 #include "wifi.hpp"
 
 #define TAG "main"
@@ -46,7 +46,6 @@ extern void lvgl_mvc_unlock(void)
 DisplayNavigationContoller displayNavigationContoller;
 HomeViewController homeViewController(NULL);
 EnergyModel energyModel;
-WeatherModel weatherModel;
 
 void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps,
                                  const char* function_name);
@@ -75,6 +74,10 @@ void startGuiContoller()
 
     displayNavigationContoller.setDisplay(lv_display_get_default());
     displayNavigationContoller.pushViewController(homeViewController);
+
+    lv_timer_t *timer = lv_timer_create(
+        [](lv_timer_t* timer) { readWeatherService(); }, 1000 * 10, NULL);
+    lv_timer_ready(timer);
 
     lvgl_port_unlock();
 }
@@ -187,8 +190,6 @@ extern "C" void app_main(void)
     display::setupBacklightPin((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT);
     display::setBacklight((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT, 1);
 
-    start_wifi();
-
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
     esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
@@ -196,11 +197,14 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(startSpiffs("/spiffs"));
 
-    httpd_handle_t httpdHandle;
+    start_wifi(true);
 
+    httpd_handle_t httpdHandle;
     ESP_ERROR_CHECK(startWebserver(&httpdHandle, "/spiffs"));
 
     mqtt_app_start();
+
+    readWeatherService();
 
     while (1) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);

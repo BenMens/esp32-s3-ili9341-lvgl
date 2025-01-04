@@ -9,7 +9,9 @@ enum class WeatherModelEvents : uint16_t {
 };
 DEFINE_EVENTS_ENUM(WeatherModelEvents)
 
-typedef void *WeatherModelEventData;
+typedef struct WeatherModelEventData {
+    int index;
+} WeatherModelEventData;
 
 struct ForecastHour {
     char time[6];
@@ -30,36 +32,18 @@ class WeatherModel
         for (int i = 0; i < sizeof(forecastHour) / sizeof(ForecastHour); i++) {
             forecastHour[i].temperature = 0;
         }
-
-        strcpy(forecastHour[0].time, "10:00");
-        strcpy(forecastHour[1].time, "11:00");
-        strcpy(forecastHour[2].time, "12:00");
-        strcpy(forecastHour[3].time, "13:00");
-        strcpy(forecastHour[4].time, "14:00");
-        strcpy(forecastHour[5].time, "15:00");
-        strcpy(forecastHour[6].time, "16:00");
-        strcpy(forecastHour[7].time, "17:00");
-        strcpy(forecastHour[8].time, "18:00");
-        strcpy(forecastHour[9].time, "19:00");
-        strcpy(forecastHour[10].time, "20:00");
-        strcpy(forecastHour[11].time, "21:00");
-
-        strcpy(forecastHour[0].icon, "zonnig");
-        strcpy(forecastHour[1].icon, "bliksem");
-        strcpy(forecastHour[2].icon, "regen");
-        strcpy(forecastHour[3].icon, "buien");
-        strcpy(forecastHour[4].icon, "hagel");
-        strcpy(forecastHour[5].icon, "mist");
-        strcpy(forecastHour[6].icon, "sneeuw");
-        strcpy(forecastHour[7].icon, "bewolkt");
-        strcpy(forecastHour[8].icon, "lichtbewolkt");
-        strcpy(forecastHour[9].icon, "halfbewolkt");
-        strcpy(forecastHour[10].icon, "halfbewolkt_regen");
-        strcpy(forecastHour[11].icon, "zwaarbewolkt");
     }
 
-    ForecastHour *getForecasthour()
+    const ForecastHour& getForecasthour(int index)
     {
-        return forecastHour;
+        return forecastHour[index];
+    }
+
+    void setForecasthour(int index, ForecastHour& forecast)
+    {
+        forecastHour[index] = forecast;
+
+        WeatherModelEventData eventData = {.index = index};
+        events.send(WeatherModelEvents::FORECAST_CHANGED, &eventData);
     }
 };

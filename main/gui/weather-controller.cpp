@@ -12,18 +12,14 @@ WeatherViewController::WeatherViewController(
     ViewController *parentViewController)
     : ViewController(parentViewController), backButtonViewController(this)
 {
-    for (int i = 0; i < sizeof(weatherHourViewControllers) /
-                            sizeof(WeatherHourViewController *);
-         i++) {
-        weatherHourViewControllers[i] = new WeatherHourViewController(this);
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
+        weatherHourViewControllers[i] = new WeatherHourViewController(this, i);
     }
 }
 
 WeatherViewController::~WeatherViewController()
 {
-    for (int i = 0; i < sizeof(weatherHourViewControllers) /
-                            sizeof(WeatherHourViewController *);
-         i++) {
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
         delete weatherHourViewControllers[i];
     }
 }
@@ -53,10 +49,7 @@ lv_obj_t *WeatherViewController::createView(lv_obj_t *parent)
     lv_obj_set_flex_flow(bottomRow, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(bottomRow, 4, 0);
 
-    for (int i = 0; i < sizeof(weatherHourViewControllers) /
-                            sizeof(WeatherHourViewController *);
-         i++) {
-        weatherHourViewControllers[i]->setForecast(&weatherModel.getForecasthour()[i]);
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
         weatherHourViewControllers[i]->getViewAttachedToParent(bottomRow);
     }
 
@@ -65,14 +58,26 @@ lv_obj_t *WeatherViewController::createView(lv_obj_t *parent)
     return view;
 }
 
+void WeatherViewController::onPushed()
+{
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
+        weatherHourViewControllers[i]->onPushed();
+    }
+}
+
+void WeatherViewController::onPopped()
+{
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
+        weatherHourViewControllers[i]->onPopped();
+    }
+}
+
 void WeatherViewController::update()
 {
     if (!viewValid()) return;
 
     if (lvgl_mvc_lock(0)) {
-        for (int i = 0; i < sizeof(weatherHourViewControllers) /
-                                sizeof(WeatherHourViewController *);
-             i++) {
+        for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
             weatherHourViewControllers[i]->update();
         }
         lvgl_mvc_unlock();

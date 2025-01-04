@@ -59,7 +59,7 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
 
 void WifiViewController::onPushed()
 {
-    wifiModelRegistration = wifiModel.events.addHandler(
+    wifiModelSubscription = wifiModel.events.addHandler(
         WifiModelEvents::ADDRESS_CHANGED | WifiModelEvents::SSID_CHANGED |
             WifiModelEvents::STATUS_CHANGED,
         nullptr,
@@ -69,7 +69,7 @@ void WifiViewController::onPushed()
 
 void WifiViewController::onPopped()
 {
-    wifiModel.events.removeHandler(wifiModelRegistration);
+    wifiModel.events.removeHandler(wifiModelSubscription);
 }
 
 void WifiViewController::update()

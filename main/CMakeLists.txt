@@ -4,6 +4,7 @@ set(srcs
     http-server.cpp
     spiffs.cpp
     mqtt-client.cpp
+    weather-client.cpp
     lvgl-touch-xpt2046.cpp
     gui/clock-controller.cpp
     gui/wifi-controller.cpp
@@ -35,8 +36,10 @@ idf_component_register(
         wifi_provisioning
         lwip
         esp_http_server
+        esp_http_client
         spiffs
         mqtt
+        json
 )
 
 spiffs_create_partition_image(spiffs ../spiffs_source FLASH_IN_PROJECT)

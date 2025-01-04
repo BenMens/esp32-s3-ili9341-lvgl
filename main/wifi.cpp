@@ -25,6 +25,7 @@ static const char *TAG = "app";
 
 /* Signal Wi-Fi events on this event-group */
 const int WIFI_CONNECTED_EVENT = BIT0;
+const int WIFI_FAIL_EVENT = BIT1;
 static EventGroupHandle_t wifi_event_group;
 
 #define PROV_QR_VERSION "v1"
@@ -83,6 +84,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
+                xEventGroupSetBits(wifi_event_group, WIFI_FAIL_EVENT);
                 esp_wifi_connect();
                 break;
             case WIFI_EVENT_AP_STACONNECTED:
@@ -184,7 +186,7 @@ void provision_wifi()
     // lvgl_port_unlock();
 }
 
-void start_wifi(void)
+void start_wifi(bool waitTillConnected)
 {
     /* Initialize the event loop */
     wifi_event_group = xEventGroupCreate();
@@ -228,8 +230,22 @@ void start_wifi(void)
         ESP_ERROR_CHECK(esp_wifi_start());
     }
 
-    // vTaskDelay(5000 / portTICK_PERIOD_MS);
-
     // provision_wifi_init();
     // provision_wifi();
+
+    if (waitTillConnected) {
+        EventBits_t bits = xEventGroupWaitBits(
+            wifi_event_group, WIFI_CONNECTED_EVENT | WIFI_FAIL_EVENT, pdFALSE,
+            pdFALSE, portMAX_DELAY);
+
+        /* xEventGroupWaitBits() returns the bits before the call returned,
+         * hence we can test which event actually happened. */
+        if (bits & WIFI_CONNECTED_EVENT) {
+            ESP_LOGI(TAG, "connected to Wifi");
+        } else if (bits & WIFI_FAIL_EVENT) {
+            ESP_LOGI(TAG, "Failed to connect to WiFi");
+        } else {
+            ESP_LOGE(TAG, "UNEXPECTED EVENT");
+        }
+    }
 }

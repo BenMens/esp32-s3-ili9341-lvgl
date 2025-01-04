@@ -1,3 +1,3 @@
 #pragma once 
 
-void start_wifi(void);
+void start_wifi(bool waitTillConnected);

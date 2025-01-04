@@ -18,6 +18,23 @@ static void log_error_if_nonzero(const char* message, int error_code)
     }
 }
 
+static esp_err_t mqtt_string_to_float(char* str, int len, float* result)
+{
+    char strBuf[30];
+
+    if (len >= sizeof(strBuf)) {
+        ESP_LOGE(TAG, "Topic datasze exceeds buffer size (%.*s)", len, str);
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+    memcpy(strBuf, str, len);
+    strBuf[len] = 0;
+
+    *result = atof(strBuf);
+
+    return ESP_OK;
+}
+
 static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
                                int32_t event_id, void* event_data)
 {
@@ -30,26 +47,8 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-            msg_id = esp_mqtt_client_subscribe(client,
-                                               "p1/actuals/electricity/delivered", 0);
+            msg_id = esp_mqtt_client_subscribe(client, "p1/actuals/#", 0);
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-
-            msg_id = esp_mqtt_client_subscribe(client,
-                                               "p1/actuals/electricity/returned", 0);
-            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client,
-                                               "p1/actuals/electricity/deliveredToday", 0);
-            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client,
-                                               "p1/actuals/electricity/returnedToday", 0);
-            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client, "p1/actuals/gas/+", 0);
-            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -64,46 +63,46 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
             ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
             break;
         case MQTT_EVENT_DATA: {
-            ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+            ESP_LOGD(TAG, "MQTT_EVENT_DATA");
 
-            char strBuf[20];
-            if (event->data_len >= sizeof(strBuf)) {
-                ESP_LOGE(TAG, "Topic datasze exceeds buffer size (%.*s)",
-                         event->data_len, event->data);
-                break;
-            }
-            ESP_LOGI(TAG, "(topic, data)=(%.*s, %.*s)", event->topic_len,
+            ESP_LOGD(TAG, "(topic, data)=(%.*s, %.*s)", event->topic_len,
                      event->topic, event->data_len, event->data);
-
-            memcpy(strBuf, event->data, event->data_len);
-            strBuf[event->data_len] = 0;
 
             if (strncmp(event->topic, "p1/actuals/electricity/delivered",
                         event->topic_len) == 0) {
-                float value = atof(strBuf);
-
+                float value;
+                ESP_ERROR_CHECK(
+                    mqtt_string_to_float(event->data, event->data_len, &value));
                 energyModel.setPowerDelivered(value);
+
             } else if (strncmp(event->topic, "p1/actuals/electricity/returned",
                                event->topic_len) == 0) {
-                float value = atof(strBuf);
-
+                float value;
+                ESP_ERROR_CHECK(
+                    mqtt_string_to_float(event->data, event->data_len, &value));
                 energyModel.setPowerReturned(value);
+
             } else if (strncmp(event->topic,
                                "p1/actuals/electricity/deliveredToday",
                                event->topic_len) == 0) {
-                float value = atof(strBuf);
-
+                float value;
+                ESP_ERROR_CHECK(
+                    mqtt_string_to_float(event->data, event->data_len, &value));
                 energyModel.setElectricityDeliveredToday(value);
+
             } else if (strncmp(event->topic,
                                "p1/actuals/electricity/returnedToday",
                                event->topic_len) == 0) {
-                float value = atof(strBuf);
-
+                float value;
+                ESP_ERROR_CHECK(
+                    mqtt_string_to_float(event->data, event->data_len, &value));
                 energyModel.setElectricityReturnedToday(value);
+
             } else if (strncmp(event->topic, "p1/actuals/gas/usedToday",
                                event->topic_len) == 0) {
-                float value = atof(strBuf);
-
+                float value;
+                ESP_ERROR_CHECK(
+                    mqtt_string_to_float(event->data, event->data_len, &value));
                 energyModel.setGasDeliveredToday(value);
             }
         } break;

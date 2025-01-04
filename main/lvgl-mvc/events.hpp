@@ -114,7 +114,7 @@ class Events
         if (*pHandlerRegistration == subscription) {
             *pHandlerRegistration = (*pHandlerRegistration)->nextHandler;
 
-            delete *pHandlerRegistration;
+            delete (EventHandlerRegistration *)subscription;
         }
     }
 

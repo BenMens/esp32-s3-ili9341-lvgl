@@ -8,7 +8,7 @@ class WifiViewController : public ViewController
 {
    private:
     WifiModel &wifiModel;
-    EventSubscription wifiModelRegistration;
+    EventSubscription wifiModelSubscription;
     lv_obj_t *ipAddresLabel;
     lv_obj_t *ssidLabel;
     lv_obj_t *statusLabel;

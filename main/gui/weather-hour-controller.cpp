@@ -4,9 +4,15 @@
 
 #include <cstring>
 
+#include "esp_log.h"
+
+#define TAG "weather-hour-controller"
+
+extern WeatherModel weatherModel;
+
 WeatherHourViewController::WeatherHourViewController(
-    ViewController *parentViewController)
-    : ViewController(parentViewController), forecast(NULL)
+    ViewController *parentViewController, int forecastIndex)
+    : ViewController(parentViewController), forecastIndex(forecastIndex)
 {
 }
 
@@ -33,29 +39,48 @@ lv_obj_t *WeatherHourViewController::createView(lv_obj_t *parent)
     return view;
 }
 
+void WeatherHourViewController::onPushed()
+{
+    ESP_LOGD(TAG, "Adding event subscription for WeatherHourViewController(%d)",
+             forecastIndex);
+    eventSubscription = weatherModel.events.addHandler(
+        WeatherModelEvents::FORECAST_CHANGED, NULL,
+        [&](WeatherModel &source, WeatherModelEvents event,
+            WeatherModelEventData *eventData, void *userData) {
+            if (eventData->index == forecastIndex) {
+                update();
+            }
+        });
+}
+
+void WeatherHourViewController::onPopped()
+{
+    ESP_LOGD(TAG,
+             "Removing event subscription for WeatherHourViewController(%d)",
+             forecastIndex);
+    weatherModel.events.removeHandler(eventSubscription);
+    eventSubscription = NULL;
+}
+
 void WeatherHourViewController::update()
 {
     if (!viewValid()) return;
-    if (forecast == 0) return;
+    if (forecastIndex < 0) return;
 
     if (lvgl_mvc_lock(0)) {
         char strBuf[40];
 
-        lv_label_set_text(timeControll, forecast->time);
+        const ForecastHour &forecast =
+            weatherModel.getForecasthour(forecastIndex);
 
-        snprintf(strBuf, sizeof(strBuf), "%.1f °C", forecast->temperature);
+        lv_label_set_text(timeControll, forecast.time);
+
+        snprintf(strBuf, sizeof(strBuf), "%.1f °C", forecast.temperature);
         lv_label_set_text(temperatureControll, strBuf);
 
-        snprintf(strBuf, sizeof(strBuf), "A:iconen/%s.png", forecast->icon);
+        snprintf(strBuf, sizeof(strBuf), "A:iconen/%s.png", forecast.icon);
         lv_image_set_src(iconControll, strBuf);
 
         lvgl_mvc_unlock();
     }
-}
-
-void WeatherHourViewController::setForecast(ForecastHour *forecast)
-{
-    this->forecast = forecast;
-
-    update();
 }

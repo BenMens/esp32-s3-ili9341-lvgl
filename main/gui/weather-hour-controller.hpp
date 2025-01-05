@@ -13,6 +13,9 @@ class WeatherHourViewController : public ViewController
     lv_obj_t *temperatureControll;
     lv_obj_t *iconControll;
     lv_obj_t *timeControll;
+    lv_obj_t *windControll;
+    lv_obj_t *rainControll;
+    lv_obj_t *windDirControll;
     int forecastIndex;
 
    public:

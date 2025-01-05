@@ -75,8 +75,8 @@ void startGuiContoller()
     displayNavigationContoller.setDisplay(lv_display_get_default());
     displayNavigationContoller.pushViewController(homeViewController);
 
-    lv_timer_t *timer = lv_timer_create(
-        [](lv_timer_t* timer) { readWeatherService(); }, 1000 * 10, NULL);
+    lv_timer_t* timer = lv_timer_create(
+        [](lv_timer_t* timer) { readWeatherService(); }, 1000 * 60 * 10, NULL);
     lv_timer_ready(timer);
 
     lvgl_port_unlock();
@@ -86,9 +86,10 @@ static esp_err_t app_lvgl_init(void)
 {
     /* Initialize LVGL */
     const lvgl_port_cfg_t lvgl_cfg = {
-        .task_priority = 2,  /* LVGL task priority */
-        .task_stack = 8196,  /* LVGL task stack size */
-        .task_affinity = -1, /* LVGL task pinned to core (-1 is no affinity) */
+        .task_priority = 2,                          /* LVGL task priority */
+        .task_stack = 8196,                          /* LVGL task stack size */
+        .task_affinity = (esp_intr_cpu_affinity_t)0, /* LVGL task pinned to core
+                                                        (-1 is no affinity) */
         .task_max_sleep_ms = 500, /* Maximum sleep in LVGL task */
         .timer_period_ms = 5,     /* LVGL timer tick period in ms */
     };

@@ -9,6 +9,9 @@
 #include "esp_tls.h"
 #include "model/weather-model.hpp"
 
+extern const char isrg_root_x1_pem_start[] asm("_binary_isrg_root_x1_pem_start");
+extern const char isrg_root_x1_pem_end[]   asm("_binary_isrg_root_x1_pem_end");
+
 WeatherModel weatherModel;
 
 typedef struct ResponseBodyBuffer {
@@ -99,17 +102,18 @@ static void http_rest_with_url(void)
 
     esp_http_client_config_t config = {};
 
-    // config.url =
-    //     "https://weerlive.nl/api/"
-    //     "weerlive_api_v2.php?key=2db479ee91&locatie=Zoetermeer";
     config.url =
         "https://weerlive.nl/api/"
-        "weerlive_api_v2.php?key=demo&locatie=Amsterdam";
+        "weerlive_api_v2.php?key=2db479ee91&locatie=Zoetermeer";
+    // config.url =
+    //     "https://weerlive.nl/api/"
+    //     "weerlive_api_v2.php?key=demo&locatie=Amsterdam";
     config.event_handler = _http_event_handler;
     config.user_data = &responseBuffer;
     config.disable_auto_redirect = true;
     config.method = HTTP_METHOD_GET;
     config.keep_alive_enable = true;
+    config.cert_pem = isrg_root_x1_pem_start;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -125,19 +129,35 @@ static void http_rest_with_url(void)
         for (int i = 0; i < 12; i++) {
             cJSON *uur = cJSON_GetArrayItem(uur_verw, i);
 
-            ForecastHour forecast;
-            strlcpy(forecast.icon,
-                    cJSON_GetObjectItem(uur, "image")->valuestring,
-                    sizeof(forecast.icon));
-            forecast.temperature =
-                (float)cJSON_GetObjectItem(uur, "temp")->valuedouble;
+            if (uur != NULL) {
+                ForecastHour forecast;
+                strlcpy(forecast.icon,
+                        cJSON_GetObjectItem(uur, "image")->valuestring,
+                        sizeof(forecast.icon));
+                forecast.temperature =
+                    (float)cJSON_GetObjectItem(uur, "temp")->valuedouble;
 
-            char *t = strchr(cJSON_GetObjectItem(uur, "uur")->valuestring, ' ');
-            if (t != NULL) {
-                strlcpy(forecast.time, ++t, sizeof(forecast.time));
+                forecast.windSpeed =
+                    (float)cJSON_GetObjectItem(uur, "windbft")->valuedouble;
+
+                strlcpy(forecast.windDir,
+                        cJSON_GetObjectItem(uur, "windr")->valuestring,
+                        sizeof(forecast.windDir));
+
+                forecast.rain =
+                    (float)cJSON_GetObjectItem(uur, "neersl")->valuedouble;
+
+                char *t =
+                    strchr(cJSON_GetObjectItem(uur, "uur")->valuestring, ' ');
+                if (t != NULL) {
+                    strlcpy(forecast.time, ++t, sizeof(forecast.time));
+                }
+
+                weatherModel.setForecasthour(i, forecast);
+            } else {
+                ESP_LOGE(TAG, "Error parsing wheather data: %s",
+                         (char *)responseBuffer.body);
             }
-
-            weatherModel.setForecasthour(i, forecast);
         }
 
         cJSON_Delete(weather_json);

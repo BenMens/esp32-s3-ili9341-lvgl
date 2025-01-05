@@ -21,8 +21,10 @@ set(srcs
 )
 
 idf_component_register(
-    SRCS ${srcs}
-    INCLUDE_DIRS "."
+    SRCS 
+        ${srcs}
+    INCLUDE_DIRS 
+        "."
     REQUIRES
         esp_hw_support
         esp_event
@@ -40,6 +42,8 @@ idf_component_register(
         spiffs
         mqtt
         json
+    EMBED_TXTFILES 
+        ../certs/isrg_root_x1.pem
 )
 
 spiffs_create_partition_image(spiffs ../spiffs_source FLASH_IN_PROJECT)

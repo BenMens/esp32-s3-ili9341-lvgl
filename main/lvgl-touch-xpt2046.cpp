@@ -6,6 +6,7 @@
 #include <sdkconfig.h>
 
 #include "driver/spi_master.h"
+#include "esp_lvgl_port.h"
 
 #ifdef CONFIG_TOUCH_SPI2_HOST
 #define TOUCH_SPI_HOST SPI2_HOST
@@ -61,7 +62,7 @@ void initializeScreenTouchXpt2046()
         uint16_t strength[1];
         uint8_t count = 0;
 
-        // lcd::lvglLock(100);
+        lvgl_port_lock(0);
 
         // Update touch point data.
         ESP_ERROR_CHECK(esp_lcd_touch_read_data(tp));
@@ -76,6 +77,6 @@ void initializeScreenTouchXpt2046()
 
         data->continue_reading = false;
 
-        // lcd::lvglUnlock();
+        lvgl_port_unlock();
     });
 }

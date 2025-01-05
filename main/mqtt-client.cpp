@@ -131,8 +131,7 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
 
 void mqtt_app_start(void)
 {
-    esp_mqtt_client_config_t mqtt_cfg;
-    memset(&mqtt_cfg, 0, sizeof(mqtt_cfg));
+    esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = CONFIG_BROKER_URL;
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);

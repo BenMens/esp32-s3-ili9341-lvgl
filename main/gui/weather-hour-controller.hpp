@@ -23,6 +23,6 @@ class WeatherHourViewController : public ViewController
 
     void update();
 
-    void onPushed();
-    void onPopped();
+    void onDidAppear();
+    void onWillDisappear();
 };

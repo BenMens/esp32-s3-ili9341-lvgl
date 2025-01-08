@@ -55,7 +55,7 @@ lv_obj_t *WeatherHourViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-void WeatherHourViewController::onPushed()
+void WeatherHourViewController::onDidAppear()
 {
     eventSubscription = weatherModel.events.addHandler(
         WeatherModelEvents::FORECAST_CHANGED, NULL,
@@ -67,7 +67,7 @@ void WeatherHourViewController::onPushed()
         });
 }
 
-void WeatherHourViewController::onPopped()
+void WeatherHourViewController::onWillDisappear()
 {
     weatherModel.events.removeHandler(eventSubscription);
     eventSubscription = NULL;

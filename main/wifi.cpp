@@ -39,6 +39,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         switch (event_id) {
             case WIFI_PROV_START:
                 ESP_LOGI(TAG, "Provisioning started");
+                wifiModel.setStatus(WifiStatus::PROVISIONING);
                 break;
             case WIFI_PROV_CRED_RECV: {
                 wifi_sta_config_t *wifi_sta_cfg =
@@ -48,6 +49,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                          "\n\tSSID     : %s\n\tPassword : %s",
                          (const char *)wifi_sta_cfg->ssid,
                          (const char *)wifi_sta_cfg->password);
+                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_RECV);
                 break;
             }
             case WIFI_PROV_CRED_FAIL: {
@@ -64,15 +66,19 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                          "Failed to connect with provisioned AP, resetting "
                          "provisioned credentials");
 
+                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_FAIL);
                 wifi_prov_mgr_reset_sm_state_on_failure();
                 break;
             }
             case WIFI_PROV_CRED_SUCCESS:
                 ESP_LOGI(TAG, "Provisioning successful");
+                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_SUCCESS);
+
                 break;
             case WIFI_PROV_END:
                 /* De-initialize manager once provisioning is finished */
                 wifi_prov_mgr_deinit();
+                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_END);
                 break;
             default:
                 break;
@@ -80,12 +86,20 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     } else if (event_base == WIFI_EVENT) {
         switch (event_id) {
             case WIFI_EVENT_STA_START:
+                wifiModel.setStatus(WifiStatus::CONNECTING);
                 esp_wifi_connect();
+                break;
+            case WIFI_EVENT_STA_STOP:
+                wifiModel.setStatus(WifiStatus::INACTIVE);
+                break;
+            case WIFI_EVENT_STA_CONNECTED:
+                wifiModel.setStatus(WifiStatus::CONNECTED);
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
                 xEventGroupSetBits(wifi_event_group, WIFI_FAIL_EVENT);
                 esp_wifi_connect();
+                wifiModel.setStatus(WifiStatus::CONNECTING);
                 break;
             case WIFI_EVENT_AP_STACONNECTED:
                 ESP_LOGI(TAG, "SoftAP transport: Connected!");
@@ -112,6 +126,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 
         /* Signal main application to continue execution */
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
+
     } else if (event_base == PROTOCOMM_SECURITY_SESSION_EVENT) {
         switch (event_id) {
             case PROTOCOMM_SECURITY_SESSION_SETUP_OK:

@@ -38,33 +38,28 @@ lv_obj_t *HomeViewController::createView(lv_obj_t *parent)
             if (code == LV_EVENT_VALUE_CHANGED) {
                 lv_obj_t *obj = (lv_obj_t *)lv_event_get_target(e);
                 uint32_t id = lv_buttonmatrix_get_selected_button(obj);
-                // const char *txt = lv_buttonmatrix_get_button_text(obj, id);
 
                 switch (id) {
-                    case 0: {
+                    case 0:
                         controller->getNavigationontroller()
                             ->pushViewController(
                                 *new WifiViewController(NULL, wifiModel));
-                    } break;
-                    case 1: {
+                        break;
+                    case 1:
                         controller->getNavigationontroller()
                             ->pushViewController(
                                 *new ClockViewController(NULL));
-
-                    } break;
-                    case 2: {
+                        break;
+                    case 2:
                         controller->getNavigationontroller()
                             ->pushViewController(
                                 *new EnergyViewController(NULL));
-
-                    } break;
-                    case 3: {
+                        break;
+                    case 3:
                         controller->getNavigationontroller()
                             ->pushViewController(
                                 *new WeatherViewController(NULL));
-                    }
-
-                    break;
+                        break;
                 }
             }
         },

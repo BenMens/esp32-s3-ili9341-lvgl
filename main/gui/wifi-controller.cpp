@@ -57,7 +57,7 @@ lv_obj_t *WifiViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-void WifiViewController::onPushed()
+void WifiViewController::onDidAppear()
 {
     wifiModelSubscription = wifiModel.events.addHandler(
         WifiModelEvents::ADDRESS_CHANGED | WifiModelEvents::SSID_CHANGED |
@@ -67,7 +67,7 @@ void WifiViewController::onPushed()
             WifiModelEventData eventData, void *userData) { this->update(); });
 }
 
-void WifiViewController::onPopped()
+void WifiViewController::onWillDisappear()
 {
     wifiModel.events.removeHandler(wifiModelSubscription);
 }
@@ -79,12 +79,13 @@ void WifiViewController::update()
     if (lvgl_mvc_lock(0)) {
         lv_label_set_text(ipAddresLabel, wifiModel.getIpAddress());
         lv_label_set_text(ssidLabel, wifiModel.getSsid());
-        lv_label_set_text(statusLabel, "-");
+        lv_label_set_text(statusLabel, wifiStatusAsString(wifiModel.getStatus()));
 
         if (strlen(wifiModel.getIpAddress()) > 1) {
             char url[32];
 
-            snprintf(url, sizeof(url), "http://%s/index.html", wifiModel.getIpAddress());
+            snprintf(url, sizeof(url), "http://%s/index.html",
+                     wifiModel.getIpAddress());
             lv_qrcode_update(qrCode, url, strlen(url));
             lv_obj_remove_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
         } else {

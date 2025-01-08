@@ -23,7 +23,7 @@ class ClockViewController : public ViewController
    public:
     ClockViewController(ViewController *parentViewController);
 
-    void onPushed();
-    void onPopped();
+    void onDidAppear();
+    void onWillDisappear();
     void update();
 };

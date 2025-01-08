@@ -208,18 +208,24 @@ extern "C" void app_main(void)
     readWeatherService();
 
     while (1) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        // heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
+        // printf("--------------\n\n");
+        // heap_caps_print_heap_info(MALLOC_CAP_SPIRAM);
+        // printf("--------------\n\n");
+        // heap_caps_print_heap_info(MALLOC_CAP_DMA);
+        // printf("==============\n\n\n\n");
     }
 }
 
 void* lv_malloc_core(size_t size)
 {
-    return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
+    return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
 }
 
 void* lv_realloc_core(void* p, size_t new_size)
 {
-    return heap_caps_realloc(p, new_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
+    return heap_caps_realloc(p, new_size, MALLOC_CAP_SPIRAM);
 }
 
 void lv_free_core(void* data)

@@ -70,18 +70,18 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
 
     second_hand = lv_line_create(clock);
     lv_line_set_points_mutable(second_hand, second_hand_points, 2);
-    lv_obj_set_style_line_width(second_hand, 1, 0);
+    lv_obj_set_style_line_width(second_hand, 3, 0);
     lv_obj_set_style_line_rounded(second_hand, true, 0);
-    lv_obj_set_style_line_color(second_hand, lv_color_black(), 0);
+    lv_obj_set_style_line_color(second_hand, lv_color_make(0xff, 0x00, 0x00), 0);
 
     minute_hand = lv_line_create(clock);
     lv_line_set_points_mutable(minute_hand, minute_hand_points, 2);
-    lv_obj_set_style_line_width(minute_hand, 3, 0);
+    lv_obj_set_style_line_width(minute_hand, 5, 0);
     lv_obj_set_style_line_rounded(minute_hand, true, 0);
     lv_obj_set_style_line_color(minute_hand, lv_color_black(), 0);
 
     hour_hand = lv_line_create(clock);
-    lv_obj_set_style_line_width(hour_hand, 5, 0);
+    lv_obj_set_style_line_width(hour_hand, 7, 0);
     lv_obj_set_style_line_rounded(hour_hand, true, 0);
     lv_obj_set_style_line_color(hour_hand, lv_color_black(), 0);
 
@@ -90,20 +90,28 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-void ClockViewController::onPushed()
+void ClockViewController::onDidAppear()
 {
-    timer = lv_timer_create(
-        [](lv_timer_t *timer) {
-            ClockViewController *controller =
-                (ClockViewController *)lv_timer_get_user_data(timer);
-            controller->update();
-        },
-        1000, this);
+    if (lvgl_mvc_lock(0)) {
+        timer = lv_timer_create(
+            [](lv_timer_t *timer) {
+                ClockViewController *controller =
+                    (ClockViewController *)lv_timer_get_user_data(timer);
+                controller->update();
+            },
+            1000, this);
+
+        lvgl_mvc_unlock();
+    }
 }
 
-void ClockViewController::onPopped()
+void ClockViewController::onWillDisappear()
 {
-    lv_timer_delete(timer);
+    if (lvgl_mvc_lock(0)) {
+        lv_timer_delete(timer);
+
+        lvgl_mvc_unlock();
+    }
 }
 
 void ClockViewController::update()

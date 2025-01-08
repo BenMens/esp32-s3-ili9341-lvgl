@@ -24,7 +24,7 @@ class EnergyViewController : public ViewController
    public:
     EnergyViewController(ViewController *parentViewController);
 
-    void onPushed();
-    void onPopped();
+    void onDidAppear();
+    void onWillDisappear();
     void update();
 };

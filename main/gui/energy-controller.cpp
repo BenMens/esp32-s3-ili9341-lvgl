@@ -39,7 +39,7 @@ lv_obj_t *EnergyViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-void EnergyViewController::onPushed()
+void EnergyViewController::onDidAppear()
 {
     energyModelRegistration = energyModel.events.addHandler(
         EnergyModelEvents::POWER_DELIVERED_CHANGED |
@@ -52,7 +52,7 @@ void EnergyViewController::onPushed()
             EnergyModelEventData eventData, void *userData) { update(); });
 }
 
-void EnergyViewController::onPopped()
+void EnergyViewController::onWillDisappear()
 {
     energyModel.events.removeHandler(energyModelRegistration);
 }

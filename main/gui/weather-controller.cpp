@@ -58,17 +58,17 @@ lv_obj_t *WeatherViewController::createView(lv_obj_t *parent)
     return view;
 }
 
-void WeatherViewController::onPushed()
+void WeatherViewController::onDidAppear()
 {
     for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
-        weatherHourViewControllers[i]->onPushed();
+        weatherHourViewControllers[i]->onDidAppear();
     }
 }
 
-void WeatherViewController::onPopped()
+void WeatherViewController::onWillDisappear()
 {
     for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
-        weatherHourViewControllers[i]->onPopped();
+        weatherHourViewControllers[i]->onWillDisappear();
     }
 }
 
@@ -76,10 +76,7 @@ void WeatherViewController::update()
 {
     if (!viewValid()) return;
 
-    if (lvgl_mvc_lock(0)) {
-        for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
-            weatherHourViewControllers[i]->update();
-        }
-        lvgl_mvc_unlock();
+    for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
+        weatherHourViewControllers[i]->update();
     }
 }

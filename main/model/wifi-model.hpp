@@ -14,10 +14,16 @@ typedef void *WifiModelEventData;
 enum class WifiStatus {
     INACTIVE,
     SCANNING,
-    CONNECTION,
+    CONNECTING,
     CONNECTED,
     PROVISIONING,
+    PROVISIONING_CRED_RECV,
+    PROVISIONING_CRED_FAIL,
+    PROVISIONING_CRED_SUCCESS,
+    PROVISIONING_CRED_END,
 };
+
+extern const char *wifiStatusAsString(WifiStatus status);
 
 class WifiModel
 {

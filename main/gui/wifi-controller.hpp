@@ -21,7 +21,7 @@ class WifiViewController : public ViewController
    public:
     WifiViewController(ViewController *parentViewController, WifiModel &model);
 
-    void onPushed();
-    void onPopped();
+    void onDidAppear();
+    void onWillDisappear();
     void update();
 };

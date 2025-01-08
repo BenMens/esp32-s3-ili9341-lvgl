@@ -18,7 +18,7 @@ class WeatherViewController : public ViewController
     WeatherViewController(ViewController *parentViewController);
     ~WeatherViewController();
 
-    void onPushed();
-    void onPopped();
+    void onDidAppear();
+    void onWillDisappear();
     void update();
 };

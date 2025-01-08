@@ -9,7 +9,6 @@ enum class NavigationAction {
     CAROUSEL_RIGHT,
 };
 
-
 class NavigationController : public ViewController
 {
    public:
@@ -85,14 +84,16 @@ class DisplayNavigationContoller : public NavigationController
         DisplayViewControllerEntry *prevEntry = topEntry->previousEntry;
 
         viewController.setNavigationontroller(this);
-        viewController.onPushed();
 
         if (prevEntry) {
             prevEntry->viewController.onChildPushed(&viewController);
+            prevEntry->viewController.onWillDisappear();
         }
 
         lv_disp_set_default(display);
         loadScreen(*topEntry, prevEntry, NavigationAction::PUSH);
+
+        viewController.onDidAppear();
     }
 
     void popViewController()
@@ -101,14 +102,16 @@ class DisplayNavigationContoller : public NavigationController
             DisplayViewControllerEntry *prevTopEntry = topEntry;
             topEntry = prevTopEntry->previousEntry;
 
-            prevTopEntry->viewController.onPopped();
+            prevTopEntry->viewController.onWillDisappear();
             prevTopEntry->viewController.setNavigationontroller(nullptr);
 
             lv_disp_set_default(display);
             if (topEntry != nullptr) {
                 loadScreen(*topEntry, prevTopEntry, NavigationAction::POP);
+                
                 topEntry->viewController.onChildPopped(
                     &prevTopEntry->viewController);
+                topEntry->viewController.onDidAppear();
             } else {
                 lv_screen_load(NULL);
             }

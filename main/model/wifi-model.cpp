@@ -43,3 +43,39 @@ WifiStatus WifiModel::getStatus()
 {
     return status;
 }
+
+const char *wifiStatusAsString(WifiStatus status)
+{
+    switch (status) {
+        case WifiStatus::INACTIVE:
+            return "INACTIVE";
+            break;
+        case WifiStatus::SCANNING:
+            return "SCANNING";
+            break;
+        case WifiStatus::CONNECTING:
+            return "CONNECTING";
+            break;
+        case WifiStatus::CONNECTED:
+            return "connected";
+            break;
+        case WifiStatus::PROVISIONING:
+            return "PROVISIONING";
+            break;
+        case WifiStatus::PROVISIONING_CRED_RECV:
+            return "PROV_CRED_RECV";
+            break;
+        case WifiStatus::PROVISIONING_CRED_FAIL:
+            return "PROV_CRED_FAIL";
+            break;
+        case WifiStatus::PROVISIONING_CRED_SUCCESS:
+            return "PROV_CRED_SUCCESS";
+            break;
+        case WifiStatus::PROVISIONING_CRED_END:
+            return "PROV_CRED_END";
+            break;
+        default:
+            return "undefined";
+            break;
+    }
+}

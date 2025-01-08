@@ -64,9 +64,9 @@ class ViewController
 
     virtual void update() {}
 
-    virtual void onPushed() {}
+    virtual void onDidAppear() {}
 
-    virtual void onPopped() {}
+    virtual void onWillDisappear() {}
 
     virtual void onChildPopped(ViewController *poppedViewController) {}
 

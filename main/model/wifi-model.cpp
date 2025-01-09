@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-WifiModel::WifiModel() : events(*this)
+WifiModel::WifiModel() : events(*this), getProvisioningQrCodeString(NULL)
 {
     strlcpy(ipAddress, "-", sizeof(ipAddress));
     strlcpy(ssid, "-", sizeof(ssid));
@@ -67,12 +67,6 @@ const char *wifiStatusAsString(WifiStatus status)
             break;
         case WifiStatus::PROVISIONING_CRED_FAIL:
             return "PROV_CRED_FAIL";
-            break;
-        case WifiStatus::PROVISIONING_CRED_SUCCESS:
-            return "PROV_CRED_SUCCESS";
-            break;
-        case WifiStatus::PROVISIONING_CRED_END:
-            return "PROV_CRED_END";
             break;
         default:
             return "undefined";

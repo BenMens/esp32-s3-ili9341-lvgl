@@ -9,7 +9,7 @@ enum class WifiModelEvents : uint16_t {
 };
 DEFINE_EVENTS_ENUM(WifiModelEvents)
 
-typedef void *WifiModelEventData;
+typedef void WifiModelEventData;
 
 enum class WifiStatus {
     INACTIVE,
@@ -18,9 +18,7 @@ enum class WifiStatus {
     CONNECTED,
     PROVISIONING,
     PROVISIONING_CRED_RECV,
-    PROVISIONING_CRED_FAIL,
-    PROVISIONING_CRED_SUCCESS,
-    PROVISIONING_CRED_END,
+    PROVISIONING_CRED_FAIL
 };
 
 extern const char *wifiStatusAsString(WifiStatus status);
@@ -34,6 +32,7 @@ class WifiModel
 
    public:
     Events<WifiModel, WifiModelEvents, WifiModelEventData> events;
+    void (*getProvisioningQrCodeString)(char *code, size_t code_len);
 
     WifiModel();
     ~WifiModel();

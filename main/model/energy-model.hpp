@@ -11,7 +11,7 @@ enum class EnergyModelEvents : uint16_t {
 };
 DEFINE_EVENTS_ENUM(EnergyModelEvents)
 
-typedef void *EnergyModelEventData;
+typedef void EnergyModelEventData;
 
 class EnergyModel
 {

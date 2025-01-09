@@ -72,13 +72,10 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             }
             case WIFI_PROV_CRED_SUCCESS:
                 ESP_LOGI(TAG, "Provisioning successful");
-                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_SUCCESS);
-
                 break;
             case WIFI_PROV_END:
                 /* De-initialize manager once provisioning is finished */
                 wifi_prov_mgr_deinit();
-                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_END);
                 break;
             default:
                 break;
@@ -182,27 +179,28 @@ void provision_wifi()
     get_device_service_name(service_name, sizeof(service_name));
 
     wifi_prov_security_t security = WIFI_PROV_SECURITY_1;
-    const char *username = EXAMPLE_PROV_SEC2_USERNAME;
-    const char *pop = EXAMPLE_PROV_SEC2_PWD;
-    wifi_prov_security1_params_t *sec_params = pop;
+    wifi_prov_security1_params_t *sec_params = EXAMPLE_PROV_SEC2_PWD;
     const char *service_key = NULL;
     ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(
         security, (const void *)sec_params, service_name, service_key));
+}
 
-    char payload[150] = {0};
-    snprintf(payload, sizeof(payload),
+void getProvisioningQrCodeString(char *code, size_t code_len)
+{
+    char service_name[12];
+    get_device_service_name(service_name, sizeof(service_name));
+
+    snprintf(code, code_len,
              "{\"ver\":\"%s\",\"name\":\"%s\""
              ",\"username\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
-             PROV_QR_VERSION, service_name, username, pop,
-             PROV_TRANSPORT_SOFTAP);
-
-    // lvgl_port_lock(-1);
-    // lv_qrcode_update(provisioning_qr, payload, strlen(payload));
-    // lvgl_port_unlock();
+             PROV_QR_VERSION, service_name, EXAMPLE_PROV_SEC2_USERNAME,
+             EXAMPLE_PROV_SEC2_PWD, PROV_TRANSPORT_SOFTAP);
 }
 
 void start_wifi(bool waitTillConnected)
 {
+    wifiModel.getProvisioningQrCodeString = getProvisioningQrCodeString;
+
     /* Initialize the event loop */
     wifi_event_group = xEventGroupCreate();
 
@@ -245,9 +243,6 @@ void start_wifi(bool waitTillConnected)
         ESP_ERROR_CHECK(esp_wifi_start());
     }
 
-    // provision_wifi_init();
-    // provision_wifi();
-
     if (waitTillConnected) {
         EventBits_t bits = xEventGroupWaitBits(
             wifi_event_group, WIFI_CONNECTED_EVENT | WIFI_FAIL_EVENT, pdFALSE,
@@ -263,4 +258,7 @@ void start_wifi(bool waitTillConnected)
             ESP_LOGE(TAG, "UNEXPECTED EVENT");
         }
     }
+
+    // provision_wifi_init();
+    // provision_wifi();
 }

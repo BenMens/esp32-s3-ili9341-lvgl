@@ -64,7 +64,7 @@ void WifiViewController::onDidAppear()
             WifiModelEvents::STATUS_CHANGED,
         nullptr,
         [&](WifiModel &source, WifiModelEvents event,
-            WifiModelEventData eventData, void *userData) { this->update(); });
+            WifiModelEventData *eventData, void *userData) { this->update(); });
 }
 
 void WifiViewController::onWillDisappear()
@@ -79,9 +79,19 @@ void WifiViewController::update()
     if (lvgl_mvc_lock(0)) {
         lv_label_set_text(ipAddresLabel, wifiModel.getIpAddress());
         lv_label_set_text(ssidLabel, wifiModel.getSsid());
-        lv_label_set_text(statusLabel, wifiStatusAsString(wifiModel.getStatus()));
+        lv_label_set_text(statusLabel,
+                          wifiStatusAsString(wifiModel.getStatus()));
 
-        if (strlen(wifiModel.getIpAddress()) > 1) {
+        if (wifiModel.getStatus() == WifiStatus::PROVISIONING &&
+            wifiModel.getProvisioningQrCodeString != NULL) {
+            char code[150];
+
+            wifiModel.getProvisioningQrCodeString(code, sizeof(code));
+
+            lv_qrcode_update(qrCode, code, strlen(code));
+            lv_obj_remove_flag(qrCode, LV_OBJ_FLAG_HIDDEN);
+
+        } else if (strlen(wifiModel.getIpAddress()) > 1) {
             char url[32];
 
             snprintf(url, sizeof(url), "http://%s/index.html",

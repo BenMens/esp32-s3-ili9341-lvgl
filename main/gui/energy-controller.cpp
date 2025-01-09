@@ -49,7 +49,7 @@ void EnergyViewController::onDidAppear()
             EnergyModelEvents::GAS_DELIVERED_TODAY_CHANGED,
         nullptr,
         [&](EnergyModel &source, EnergyModelEvents event,
-            EnergyModelEventData eventData, void *userData) { update(); });
+            EnergyModelEventData *eventData, void *userData) { update(); });
 }
 
 void EnergyViewController::onWillDisappear()

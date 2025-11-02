@@ -3,6 +3,6 @@ dependencies:
     version: '>=5.0.0'
     public: true
   espressif/esp_lvgl_port: ^2.3.0
-  atanisoft/esp_lcd_touch_xpt2046: "~1.0.0"
-  lvgl/lvgl: 
+  atanisoft/esp_lcd_touch_xpt2046: ~1.0.0
+  lvgl/lvgl:
     version: ^9.2.2

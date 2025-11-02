@@ -7,7 +7,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 
-#include <spiffs.hpp>
+#include "spiffs.hpp"
 
 #define TAG "http-server"
 

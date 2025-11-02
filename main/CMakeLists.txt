@@ -1,11 +1,11 @@
 set(srcs
-    main.cpp
-    wifi.cpp
-    http-server.cpp
-    spiffs.cpp
-    mqtt-client.cpp
-    weather-client.cpp
-    lvgl-touch-xpt2046.cpp
+    src/main.cpp
+    src/wifi.cpp
+    src/http-server.cpp
+    src/spiffs.cpp
+    src/mqtt-client.cpp
+    src/weather-client.cpp
+    src/lvgl-touch-xpt2046.cpp
     gui/clock-controller.cpp
     gui/wifi-controller.cpp
     gui/home-controller.cpp

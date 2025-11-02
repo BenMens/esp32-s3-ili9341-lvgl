@@ -1,3 +1,5 @@
+#include "wifi.hpp"
+
 #include <esp_event.h>
 #include <esp_log.h>
 #include <esp_lvgl_port.h>
@@ -12,24 +14,30 @@
 #include <wifi_provisioning/manager.h>
 #include <wifi_provisioning/scheme_softap.h>
 
-#include <wifi.hpp>
-
 #include "model/wifi-model.hpp"
 
 WifiModel wifiModel;
 
 static const char *TAG = "app";
 
-#define EXAMPLE_PROV_SEC2_USERNAME "wifiprov"
-#define EXAMPLE_PROV_SEC2_PWD "abcd1234"
+#define PROV_SEC2_USERNAME "wifiprov"
+#define PROV_SEC2_PWD "abcd1234"
+#define PROV_QR_VERSION "v1"
+#define PROV_TRANSPORT_SOFTAP "softap"
 
 /* Signal Wi-Fi events on this event-group */
 const int WIFI_CONNECTED_EVENT = BIT0;
 const int WIFI_FAIL_EVENT = BIT1;
 static EventGroupHandle_t wifi_event_group;
 
-#define PROV_QR_VERSION "v1"
-#define PROV_TRANSPORT_SOFTAP "softap"
+static void get_device_service_name(char *service_name, size_t max)
+{
+    uint8_t eth_mac[6];
+    const char *ssid_prefix = "PROV_";
+    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+    snprintf(service_name, max, "%s%02X%02X%02X", ssid_prefix, eth_mac[3],
+             eth_mac[4], eth_mac[5]);
+}
 
 /* Event handler for catching system events */
 static void event_handler(void *arg, esp_event_base_t event_base,
@@ -39,7 +47,20 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         switch (event_id) {
             case WIFI_PROV_START:
                 ESP_LOGI(TAG, "Provisioning started");
+                wifiModel.getProvisioningQrCodeString = [](char *code,
+                                                           size_t code_len) {
+                    char service_name[12];
+                    get_device_service_name(service_name, sizeof(service_name));
+
+                    snprintf(code, code_len,
+                             "{\"ver\":\"%s\",\"name\":\"%s\""
+                             ",\"username\":\"%s\",\"pop\":\"%s\","
+                             "\"transport\":\"%s\"}",
+                             PROV_QR_VERSION, service_name, PROV_SEC2_USERNAME,
+                             PROV_SEC2_PWD, PROV_TRANSPORT_SOFTAP);
+                };
                 wifiModel.setStatus(WifiStatus::PROVISIONING);
+
                 break;
             case WIFI_PROV_CRED_RECV: {
                 wifi_sta_config_t *wifi_sta_cfg =
@@ -145,15 +166,6 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
 }
 
-static void get_device_service_name(char *service_name, size_t max)
-{
-    uint8_t eth_mac[6];
-    const char *ssid_prefix = "PROV_";
-    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
-    snprintf(service_name, max, "%s%02X%02X%02X", ssid_prefix, eth_mac[3],
-             eth_mac[4], eth_mac[5]);
-}
-
 void provision_wifi_init()
 {
     /* Make sure that wifi is stopped */
@@ -179,28 +191,14 @@ void provision_wifi()
     get_device_service_name(service_name, sizeof(service_name));
 
     wifi_prov_security_t security = WIFI_PROV_SECURITY_1;
-    wifi_prov_security1_params_t *sec_params = EXAMPLE_PROV_SEC2_PWD;
+    wifi_prov_security1_params_t *sec_params = PROV_SEC2_PWD;
     const char *service_key = NULL;
     ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(
         security, (const void *)sec_params, service_name, service_key));
 }
 
-void getProvisioningQrCodeString(char *code, size_t code_len)
-{
-    char service_name[12];
-    get_device_service_name(service_name, sizeof(service_name));
-
-    snprintf(code, code_len,
-             "{\"ver\":\"%s\",\"name\":\"%s\""
-             ",\"username\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
-             PROV_QR_VERSION, service_name, EXAMPLE_PROV_SEC2_USERNAME,
-             EXAMPLE_PROV_SEC2_PWD, PROV_TRANSPORT_SOFTAP);
-}
-
 void start_wifi(bool waitTillConnected)
 {
-    wifiModel.getProvisioningQrCodeString = getProvisioningQrCodeString;
-
     /* Initialize the event loop */
     wifi_event_group = xEventGroupCreate();
 

@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include <esp-display-ili9341.hpp>
-#include <lvgl-touch-xpt2046.hpp>
 
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
@@ -19,6 +18,7 @@
 #include "http-server.hpp"
 #include "lvgl-mvc/lvgl-mvc.hpp"
 #include "lvgl-mvc/navigation.hpp"
+#include "lvgl-touch-xpt2046.hpp"
 #include "lvgl.h"
 #include "model/energy-model.hpp"
 #include "mqtt-client.hpp"

@@ -14,9 +14,7 @@
 #include <wifi_provisioning/manager.h>
 #include <wifi_provisioning/scheme_softap.h>
 
-#include "model/wifi-model.hpp"
-
-WifiModel wifiModel;
+static WifiModel *_wifiModel;
 
 static const char *TAG = "app";
 
@@ -47,7 +45,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         switch (event_id) {
             case WIFI_PROV_START:
                 ESP_LOGI(TAG, "Provisioning started");
-                wifiModel.getProvisioningQrCodeString = [](char *code,
+                _wifiModel->getProvisioningQrCodeString = [](char *code,
                                                            size_t code_len) {
                     char service_name[12];
                     get_device_service_name(service_name, sizeof(service_name));
@@ -59,7 +57,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                              PROV_QR_VERSION, service_name, PROV_SEC2_USERNAME,
                              PROV_SEC2_PWD, PROV_TRANSPORT_SOFTAP);
                 };
-                wifiModel.setStatus(WifiStatus::PROVISIONING);
+                _wifiModel->setStatus(WifiStatus::PROVISIONING);
 
                 break;
             case WIFI_PROV_CRED_RECV: {
@@ -70,7 +68,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                          "\n\tSSID     : %s\n\tPassword : %s",
                          (const char *)wifi_sta_cfg->ssid,
                          (const char *)wifi_sta_cfg->password);
-                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_RECV);
+                _wifiModel->setStatus(WifiStatus::PROVISIONING_CRED_RECV);
                 break;
             }
             case WIFI_PROV_CRED_FAIL: {
@@ -87,7 +85,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                          "Failed to connect with provisioned AP, resetting "
                          "provisioned credentials");
 
-                wifiModel.setStatus(WifiStatus::PROVISIONING_CRED_FAIL);
+                _wifiModel->setStatus(WifiStatus::PROVISIONING_CRED_FAIL);
                 wifi_prov_mgr_reset_sm_state_on_failure();
                 break;
             }
@@ -104,20 +102,20 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     } else if (event_base == WIFI_EVENT) {
         switch (event_id) {
             case WIFI_EVENT_STA_START:
-                wifiModel.setStatus(WifiStatus::CONNECTING);
+                _wifiModel->setStatus(WifiStatus::CONNECTING);
                 esp_wifi_connect();
                 break;
             case WIFI_EVENT_STA_STOP:
-                wifiModel.setStatus(WifiStatus::INACTIVE);
+                _wifiModel->setStatus(WifiStatus::INACTIVE);
                 break;
             case WIFI_EVENT_STA_CONNECTED:
-                wifiModel.setStatus(WifiStatus::CONNECTED);
+                _wifiModel->setStatus(WifiStatus::CONNECTED);
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
                 xEventGroupSetBits(wifi_event_group, WIFI_FAIL_EVENT);
                 esp_wifi_connect();
-                wifiModel.setStatus(WifiStatus::CONNECTING);
+                _wifiModel->setStatus(WifiStatus::CONNECTING);
                 break;
             case WIFI_EVENT_AP_STACONNECTED:
                 ESP_LOGI(TAG, "SoftAP transport: Connected!");
@@ -135,12 +133,12 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 
         char ifAddressString[16];
         sprintf(ifAddressString, IPSTR, IP2STR(&event->ip_info.ip));
-        wifiModel.setIpAddress(ifAddressString);
+        _wifiModel->setIpAddress(ifAddressString);
 
         wifi_ap_record_t ap_info;
         esp_wifi_sta_get_ap_info(&ap_info);
 
-        wifiModel.setSsid((const char *)ap_info.ssid);
+        _wifiModel->setSsid((const char *)ap_info.ssid);
 
         /* Signal main application to continue execution */
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
@@ -197,8 +195,10 @@ void provision_wifi()
         security, (const void *)sec_params, service_name, service_key));
 }
 
-void start_wifi(bool waitTillConnected)
+void start_wifi(WifiModel &wifiModel, bool waitTillConnected)
 {
+    _wifiModel = &wifiModel;
+
     /* Initialize the event loop */
     wifi_event_group = xEventGroupCreate();
 

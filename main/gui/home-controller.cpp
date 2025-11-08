@@ -1,16 +1,24 @@
 #include "home-controller.hpp"
 
 #include "../lvgl-mvc/navigation.hpp"
+#include "../model/energy-model.hpp"
+#include "../model/weather-model.hpp"
 #include "../model/wifi-model.hpp"
 #include "clock-controller.hpp"
 #include "energy-controller.hpp"
 #include "weather-controller.hpp"
 #include "wifi-controller.hpp"
 
-extern WifiModel wifiModel;
-
-HomeViewController::HomeViewController(ViewController *parentViewController)
-    : ViewController(parentViewController)
+HomeViewController::HomeViewController(ViewController *parentViewController,
+                                       WeatherModel &weatherModel,
+                                       WifiModel &wifiModel,
+                                       EnergyModel &energyModel,
+                                       TemperatureModel &temperatureModel)
+    : ViewController(parentViewController),
+      weatherModel(weatherModel),
+      wifiModel(wifiModel),
+      energyModel(energyModel),
+      temperatureModel(temperatureModel)
 {
 }
 
@@ -42,23 +50,23 @@ lv_obj_t *HomeViewController::createView(lv_obj_t *parent)
                 switch (id) {
                     case 0:
                         controller->getNavigationontroller()
-                            ->pushViewController(
-                                *new WifiViewController(NULL, wifiModel));
+                            ->pushViewController(*new WifiViewController(
+                                NULL, controller->wifiModel));
                         break;
                     case 1:
                         controller->getNavigationontroller()
-                            ->pushViewController(
-                                *new ClockViewController(NULL));
+                            ->pushViewController(*new ClockViewController(
+                                NULL, controller->temperatureModel));
                         break;
                     case 2:
                         controller->getNavigationontroller()
-                            ->pushViewController(
-                                *new EnergyViewController(NULL));
+                            ->pushViewController(*new EnergyViewController(
+                                NULL, controller->energyModel));
                         break;
                     case 3:
                         controller->getNavigationontroller()
-                            ->pushViewController(
-                                *new WeatherViewController(NULL));
+                            ->pushViewController(*new WeatherViewController(
+                                NULL, controller->weatherModel));
                         break;
                 }
             }

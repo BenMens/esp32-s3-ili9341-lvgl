@@ -6,11 +6,9 @@
 
 #define TAG "weather-hour-controller"
 
-extern WeatherModel weatherModel;
-
 WeatherHourViewController::WeatherHourViewController(
-    ViewController *parentViewController, int forecastIndex)
-    : ViewController(parentViewController), forecastIndex(forecastIndex)
+    ViewController *parentViewController, int forecastIndex, WeatherModel &weatherModel)
+    : ViewController(parentViewController), weatherModel(weatherModel), forecastIndex(forecastIndex)
 {
 }
 

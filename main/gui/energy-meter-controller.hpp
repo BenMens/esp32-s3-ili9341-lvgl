@@ -11,7 +11,8 @@ class EnergyMeterViewController : public ViewController
     lv_obj_t *valueScale;
 
    public:
-    EnergyMeterViewController(ViewController *parentViewController, float scaleMax);
+    EnergyMeterViewController(ViewController *parentViewController,
+                              float scaleMax);
 
     void update();
     void setValue(float value);

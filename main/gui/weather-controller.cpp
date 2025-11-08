@@ -6,14 +6,15 @@
 
 #include "../model/weather-model.hpp"
 
-extern WeatherModel weatherModel;
-
 WeatherViewController::WeatherViewController(
-    ViewController *parentViewController)
-    : ViewController(parentViewController), backButtonViewController(this)
+    ViewController *parentViewController, WeatherModel &weatherModel)
+    : ViewController(parentViewController),
+      backButtonViewController(this),
+      weatherModel(weatherModel)
 {
     for (int i = 0; i < NUM_HOUR_VIEW_CONTROLLERS; i++) {
-        weatherHourViewControllers[i] = new WeatherHourViewController(this, i);
+        weatherHourViewControllers[i] =
+            new WeatherHourViewController(this, i, weatherModel);
     }
 }
 

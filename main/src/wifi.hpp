@@ -1,3 +1,5 @@
 #pragma once
 
-extern void start_wifi(bool waitTillConnected);
+#include "model/wifi-model.hpp"
+
+extern void start_wifi(WifiModel &wifiModel, bool waitTillConnected);

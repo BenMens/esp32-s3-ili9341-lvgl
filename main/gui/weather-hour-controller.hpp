@@ -1,13 +1,14 @@
 #pragma once
 
+#include "../lvgl-mvc/events.hpp"
 #include "../lvgl-mvc/view-controller.hpp"
 #include "../model/weather-model.hpp"
-#include "../lvgl-mvc/events.hpp"
 
 class WeatherHourViewController : public ViewController
 {
    protected:
     EventSubscription eventSubscription;
+    WeatherModel &weatherModel;
 
     lv_obj_t *createView(lv_obj_t *parent);
     lv_obj_t *temperatureControll;
@@ -19,7 +20,8 @@ class WeatherHourViewController : public ViewController
     int forecastIndex;
 
    public:
-    WeatherHourViewController(ViewController *parentViewController, int forecastIndex);
+    WeatherHourViewController(ViewController *parentViewController,
+                              int forecastIndex, WeatherModel &weatherModel);
 
     void update();
 

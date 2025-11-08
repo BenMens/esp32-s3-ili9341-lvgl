@@ -4,8 +4,10 @@
 
 #include <cstring>
 
-EnergyViewController::EnergyViewController(ViewController *parentViewController)
+EnergyViewController::EnergyViewController(ViewController *parentViewController,
+                                           EnergyModel &energyModel)
     : ViewController(parentViewController),
+      energyModel(energyModel),
       backButtonViewController(this),
       meter1(this, 4),
       meter2(this, 4)

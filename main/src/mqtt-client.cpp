@@ -3,13 +3,12 @@
 #include <algorithm>
 
 #include "esp_log.h"
-#include "model/energy-model.hpp"
 #include "mqtt_client.h"
-
-extern EnergyModel energyModel;
 
 #define CONFIG_BROKER_URL "mqtt://192.168.1.123:1883"
 #define TAG "mqtt-client"
+
+static EnergyModel *_energyModel;
 
 static void log_error_if_nonzero(const char* message, int error_code)
 {
@@ -73,14 +72,14 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
                 float value;
                 ESP_ERROR_CHECK(
                     mqtt_string_to_float(event->data, event->data_len, &value));
-                energyModel.setPowerDelivered(value);
+                _energyModel->setPowerDelivered(value);
 
             } else if (strncmp(event->topic, "p1/actuals/electricity/returned",
                                event->topic_len) == 0) {
                 float value;
                 ESP_ERROR_CHECK(
                     mqtt_string_to_float(event->data, event->data_len, &value));
-                energyModel.setPowerReturned(value);
+                _energyModel->setPowerReturned(value);
 
             } else if (strncmp(event->topic,
                                "p1/actuals/electricity/deliveredToday",
@@ -88,7 +87,7 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
                 float value;
                 ESP_ERROR_CHECK(
                     mqtt_string_to_float(event->data, event->data_len, &value));
-                energyModel.setElectricityDeliveredToday(value);
+                _energyModel->setElectricityDeliveredToday(value);
 
             } else if (strncmp(event->topic,
                                "p1/actuals/electricity/returnedToday",
@@ -96,14 +95,14 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
                 float value;
                 ESP_ERROR_CHECK(
                     mqtt_string_to_float(event->data, event->data_len, &value));
-                energyModel.setElectricityReturnedToday(value);
+                _energyModel->setElectricityReturnedToday(value);
 
             } else if (strncmp(event->topic, "p1/actuals/gas/usedToday",
                                event->topic_len) == 0) {
                 float value;
                 ESP_ERROR_CHECK(
                     mqtt_string_to_float(event->data, event->data_len, &value));
-                energyModel.setGasDeliveredToday(value);
+                _energyModel->setGasDeliveredToday(value);
             }
         } break;
         case MQTT_EVENT_ERROR:
@@ -129,8 +128,10 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     }
 }
 
-void mqtt_app_start(void)
+void mqtt_app_start(EnergyModel &energyModel)
 {
+    _energyModel = &energyModel;
+
     esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = CONFIG_BROKER_URL;
 

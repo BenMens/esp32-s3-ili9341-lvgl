@@ -5,6 +5,7 @@
 #include <esp-display-ili9341.hpp>
 
 #include "driver/gpio.h"
+#include "driver/i2c_master.h"
 #include "driver/spi_master.h"
 #include "esp-display-backlight.hpp"
 #include "esp_check.h"
@@ -21,10 +22,13 @@
 #include "lvgl-touch-xpt2046.hpp"
 #include "lvgl.h"
 #include "model/energy-model.hpp"
+#include "model/temperature-model.hpp"
+#include "model/weather-model.hpp"
 #include "mqtt-client.hpp"
 #include "neopixel.hpp"
 #include "rtc_wdt.h"
 #include "spiffs.hpp"
+#include "temperature-sensor.hpp"
 #include "time.h"
 #include "weather-client.hpp"
 #include "wifi.hpp"
@@ -32,6 +36,27 @@
 #define TAG "main"
 
 #define NUM_LEDS 1
+
+#define LCD_H_RES 320
+#define LCD_V_RES 240
+#define LCD_DRAW_BUFF_HEIGHT 240
+#define LCD_DRAW_BUFF_DOUBLE true
+
+static EnergyModel energyModel;
+static TemperatureModel temperatureModel;
+static WeatherModel weatherModel;
+static WifiModel wifiModel;
+
+static Pixels* neoPixels = NULL;
+
+/* LCD IO and panel */
+static esp_lcd_panel_io_handle_t lcd_io = NULL;
+static esp_lcd_panel_handle_t lcd_panel = NULL;
+static lv_display_t* lvgl_disp = NULL;
+
+static DisplayNavigationContoller displayNavigationContoller;
+static HomeViewController homeViewController(NULL, weatherModel, wifiModel,
+                                             energyModel, temperatureModel);
 
 extern bool lvgl_mvc_lock(uint32_t timeout_ms)
 {
@@ -43,24 +68,8 @@ extern void lvgl_mvc_unlock(void)
     lvgl_port_unlock();
 }
 
-DisplayNavigationContoller displayNavigationContoller;
-HomeViewController homeViewController(NULL);
-EnergyModel energyModel;
-
 void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps,
                                  const char* function_name);
-
-static Pixels* neoPixels = NULL;
-
-/* LCD IO and panel */
-static esp_lcd_panel_io_handle_t lcd_io = NULL;
-static esp_lcd_panel_handle_t lcd_panel = NULL;
-static lv_display_t* lvgl_disp = NULL;
-
-#define LCD_H_RES 320
-#define LCD_V_RES 240
-#define LCD_DRAW_BUFF_HEIGHT 240
-#define LCD_DRAW_BUFF_DOUBLE true
 
 void startGuiContoller()
 {
@@ -76,8 +85,16 @@ void startGuiContoller()
     displayNavigationContoller.pushViewController(homeViewController);
 
     lv_timer_t* timer = lv_timer_create(
-        [](lv_timer_t* timer) { readWeatherService(); }, 1000 * 60 * 10, NULL);
+        [](lv_timer_t* timer) { readWeatherService(weatherModel); },
+        1000 * 60 * 10, NULL);
+
     lv_timer_ready(timer);
+
+    lv_timer_t* timer1 = lv_timer_create(
+        [](lv_timer_t* timer) { readTemperatureSensor(temperatureModel); },
+        1000 * 10, NULL);
+
+    lv_timer_ready(timer1);
 
     lvgl_port_unlock();
 }
@@ -186,6 +203,25 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(app_lvgl_init());
 
+    i2c_master_bus_config_t i2c_mst_config = {
+        .i2c_port = -1,
+        .sda_io_num = (gpio_num_t)8,
+        .scl_io_num = (gpio_num_t)9,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0,
+        .trans_queue_depth = 0,
+        .flags =
+            {
+                .enable_internal_pullup = true,
+            },
+    };
+
+    i2c_master_bus_handle_t i2c_bus_handle;
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, &i2c_bus_handle));
+
+    initTemperatureSensor(i2c_bus_handle);
+
     startGuiContoller();
 
     display::setupBacklightPin((gpio_num_t)CONFIG_PRJ_PIN_ILI9341_BK_LIGHT);
@@ -198,14 +234,14 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(startSpiffs("/spiffs"));
 
-    start_wifi(true);
+    start_wifi(wifiModel, true);
 
     httpd_handle_t httpdHandle;
     ESP_ERROR_CHECK(startWebserver(&httpdHandle, "/spiffs"));
 
-    mqtt_app_start();
+    mqtt_app_start(energyModel);
 
-    readWeatherService();
+    readWeatherService(weatherModel);
 
     while (1) {
         vTaskDelay(5000 / portTICK_PERIOD_MS);

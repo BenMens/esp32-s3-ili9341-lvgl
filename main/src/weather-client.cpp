@@ -7,12 +7,10 @@
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "esp_tls.h"
-#include "model/weather-model.hpp"
 
-extern const char isrg_root_x1_pem_start[] asm("_binary_isrg_root_x1_pem_start");
-extern const char isrg_root_x1_pem_end[]   asm("_binary_isrg_root_x1_pem_end");
-
-WeatherModel weatherModel;
+extern const char isrg_root_x1_pem_start[] asm(
+    "_binary_isrg_root_x1_pem_start");
+extern const char isrg_root_x1_pem_end[] asm("_binary_isrg_root_x1_pem_end");
 
 typedef struct ResponseBodyBuffer {
     void *body;
@@ -93,7 +91,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-static void http_rest_with_url(void)
+void readWeatherService(WeatherModel &weatherModel)
 {
     ResponseBodyBuffer responseBuffer = {};
     responseBuffer.body =
@@ -168,9 +166,4 @@ static void http_rest_with_url(void)
     esp_http_client_cleanup(client);
 
     heap_caps_free(responseBuffer.body);
-}
-
-void readWeatherService(void)
-{
-    http_rest_with_url();
 }

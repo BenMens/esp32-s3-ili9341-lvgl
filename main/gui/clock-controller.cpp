@@ -1,13 +1,17 @@
 #include "clock-controller.hpp"
 
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 static const char *hour_ticks[] = {"12", "1", "2", "3",  "4",  "5", "6",
                                    "7",  "8", "9", "10", "11", NULL};
 
-ClockViewController::ClockViewController(ViewController *parentViewController)
-    : ViewController(parentViewController), backButtonViewController(this)
+ClockViewController::ClockViewController(ViewController *parentViewController,
+                                         TemperatureModel &temperatureModel)
+    : ViewController(parentViewController),
+      temperatureModel(temperatureModel),
+      backButtonViewController(this)
 {
 }
 
@@ -72,7 +76,8 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
     lv_line_set_points_mutable(second_hand, second_hand_points, 2);
     lv_obj_set_style_line_width(second_hand, 3, 0);
     lv_obj_set_style_line_rounded(second_hand, true, 0);
-    lv_obj_set_style_line_color(second_hand, lv_color_make(0xff, 0x00, 0x00), 0);
+    lv_obj_set_style_line_color(second_hand, lv_color_make(0xff, 0x00, 0x00),
+                                0);
 
     minute_hand = lv_line_create(clock);
     lv_line_set_points_mutable(minute_hand, minute_hand_points, 2);
@@ -85,6 +90,14 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
     lv_obj_set_style_line_rounded(hour_hand, true, 0);
     lv_obj_set_style_line_color(hour_hand, lv_color_black(), 0);
 
+    temperatureLabel = lv_label_create(view);
+    lv_obj_set_pos(temperatureLabel, 10, 10);
+    lv_label_set_text(temperatureLabel, "-");
+
+    humidityLabel = lv_label_create(view);
+    lv_obj_set_pos(humidityLabel, 10, 30);
+    lv_label_set_text(humidityLabel, "-");
+
     backButtonViewController.getViewAttachedToParent(view);
 
     return view;
@@ -92,6 +105,12 @@ lv_obj_t *ClockViewController::createView(lv_obj_t *parent)
 
 void ClockViewController::onDidAppear()
 {
+    temperatureModelRegistration = temperatureModel.events.addHandler(
+        TemperatureModelEvents::MEASUREMENT_CHANGED, nullptr,
+        [&](TemperatureModel &source, TemperatureModelEvents event,
+            TemperatureModelEventData *eventData,
+            void *userData) { update(); });
+
     if (lvgl_mvc_lock(0)) {
         timer = lv_timer_create(
             [](lv_timer_t *timer) {
@@ -112,11 +131,21 @@ void ClockViewController::onWillDisappear()
 
         lvgl_mvc_unlock();
     }
+
+    temperatureModel.events.removeHandler(temperatureModelRegistration);
 }
 
 void ClockViewController::update()
 {
     if (!viewValid()) return;
+
+    char tmp[20];
+
+    snprintf(tmp, sizeof(tmp), "%.2f °C", temperatureModel.getTemperature());
+    lv_label_set_text(temperatureLabel, tmp);
+    
+    snprintf(tmp, sizeof(tmp), "%.2f %%", temperatureModel.getHumidity());
+    lv_label_set_text(humidityLabel, tmp);
 
     if (lvgl_mvc_lock(0)) {
         time_t now;

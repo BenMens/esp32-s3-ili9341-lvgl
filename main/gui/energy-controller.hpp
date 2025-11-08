@@ -5,11 +5,10 @@
 #include "back-button-controller.hpp"
 #include "energy-meter-controller.hpp"
 
-extern EnergyModel energyModel;
-
 class EnergyViewController : public ViewController
 {
    private:
+    EnergyModel &energyModel;
     EventSubscription energyModelRegistration;
     BackButtonViewController backButtonViewController;
     EnergyMeterViewController meter1;
@@ -22,7 +21,8 @@ class EnergyViewController : public ViewController
     lv_obj_t *createView(lv_obj_t *parent);
 
    public:
-    EnergyViewController(ViewController *parentViewController);
+    EnergyViewController(ViewController *parentViewController,
+                         EnergyModel &energyModel);
 
     void onDidAppear();
     void onWillDisappear();

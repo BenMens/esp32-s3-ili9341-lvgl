@@ -6,6 +6,7 @@ set(srcs
     src/mqtt-client.cpp
     src/weather-client.cpp
     src/lvgl-touch-xpt2046.cpp
+    src/temperature-sensor.cpp
     gui/clock-controller.cpp
     gui/wifi-controller.cpp
     gui/home-controller.cpp
